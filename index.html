@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spanish Vocabulary Quiz</title>
+    <style>
+        :root {
+            --primary: #6200ee;
+            --primary-dark: #3700b3;
+            --surface: #ffffff;
+            --background: #f5f5f5;
+            --error: #b00020;
+            --success: #00c853;
+            --text-primary: #000000;
+            --text-secondary: #666666;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background);
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--surface);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        h1 {
+            margin-top: 0;
+            color: var(--primary);
+        }
+
+        .input-group {
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        input[type="number"], input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+        }
+
+        /* Buttons */
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: 600;
+            transition: background-color 0.2s, transform 0.1s;
+            margin-bottom: 1rem;
+            touch-action: manipulation; /* Improves touch response */
+        }
+
+        .btn:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            margin-top: 1rem;
+            margin-bottom: 0;
+            font-size: 0.9rem;
+        }
+
+        .btn-outline:hover {
+            background-color: #f3e5f5;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Quiz Specific Styles */
+        .lang-indicator {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .word-display {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+            color: #333;
+        }
+
+        .feedback-stats {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            min-height: 1.2em;
+            font-weight: 500;
+            margin-bottom: 1rem;
+        }
+
+        .input-correct {
+            border-color: var(--success) !important;
+            background-color: #e8f5e9;
+            color: #00600f;
+        }
+
+        .input-incorrect {
+            border-color: var(--error) !important;
+            background-color: #ffebee;
+            color: var(--error);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background-color: #eee;
+            margin-top: 2rem;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .setup-screen {
+            animation: fadeIn 0.5s;
+        }
+
+        .quiz-screen {
+            animation: slideIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Setup Screen -->
+    <div id="setupScreen" class="container setup-screen">
+        <h1>Spanish Trainer</h1>
+        <p>Master the 1000 most common words.</p>
+        
+        <div class="input-group">
+            <label for="progressInput">How many words have you learned?</label>
+            <input type="number" id="progressInput" min="0" max="1000" placeholder="e.g., 50">
+        </div>
+
+        <button class="btn" onclick="startQuiz()">Start Quiz</button>
+    </div>
+
+    <!-- Quiz Screen -->
+    <div id="quizScreen" class="container quiz-screen hidden">
+        <div class="lang-indicator" id="langIndicator"></div>
+        <div class="word-display" id="questionWord">Hola</div>
+        
+        <div class="input-group">
+            <input type="text" id="answerInput" placeholder="Type translation..." autocomplete="off">
+        </div>
+        
+        <button class="btn" onclick="checkAnswer()">Submit</button>
+
+        <div class="feedback-stats" id="statsDisplay"></div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressBar"></div>
+        </div>
+
+        <button class="btn btn-outline" onclick="copyAiPrompt()">
+            📋 Copy AI Practice Prompt
+        </button>
+    </div>
+
+    <script>
+        // Placeholder list - REPLACE THIS with your full 1000 word list
+        const fullWordList = [
+               { "Hola": "Hello" },
+    { "Buenos días": "Good morning" },
+    { "Buenas tardes": "Good afternoon" },
+    { "Buenas noches": "Good evening/Good night" },
+    { "¿Cómo estás?": "How are you?" },
+    { "Bien": "Good/Well" },
+    { "Muy bien": "Very good/Very well" },
+    { "¿Y tú?": "And you?" },
+    { "Adiós": "Goodbye" },
+    { "Hasta luego": "See you later" },
+    { "Gracias": "Thank you" },
+    { "Muchas gracias": "Thank you very much" },
+    { "De nada": "You're welcome" },
+    { "Por favor": "Please" },
+    { "Lo siento": "I'm sorry" },
+    { "Perdón": "Excuse me/Sorry" },
+    { "Disculpe": "Excuse me (formal)" },
+    { "Con permiso": "Excuse me (passing through)" },
+    { "Mucho gusto": "Nice to meet you" },
+    { "Encantado": "Delighted (male)" },
+    { "Encantada": "Delighted (female)" },
+    { "Me llamo": "My name is" },
+    { "¿Cómo te llamas?": "What's your name?" },
+    
+    // People & Family
+    { "Familia": "Family" },
+    { "padres": "parents" },
+    { "madre": "mother" },
+    { "padre": "father" },
+    { "hermano": "brother" },
+    { "hermana": "sister" },
+    { "abuelo": "grandfather" },
+    { "abuela": "grandmother" },
+    { "tío": "uncle" },
+    { "tía": "aunt" },
+    { "primo": "cousin (male)" },
+    { "prima": "cousin (female)" },
+    { "nieto": "grandson" },
+    { "nieta": "granddaughter" },
+    { "esposo": "husband" },
+    { "esposa": "wife" },
+    { "hijo": "son" },
+    { "hija": "daughter" },
+    { "bisabuelo": "great-grandfather" },
+    { "bisabuela": "great-grandmother" },
+    { "bisnieto": "great-grandson" },
+    { "bisnieta": "great-granddaughter" },
+    { "parientes": "relatives" },
+    { "relativos": "relatives" },
+    
+    // Food & Drink - Fruits
+    { "Manzana": "apple" },
+    { "pera": "pear" },
+    { "plátano": "banana" },
+    { "melón": "melon" },
+    { "sandía": "watermelon" },
+    { "uva": "grape" },
+    { "durazno": "peach" },
+    { "melocotón": "peach" },
+    { "albaricoque": "apricot" },
+    { "mango": "mango" },
+    { "piña": "pineapple" },
+    { "fresa": "strawberry" },
+    { "cereza": "cherry" },
+    { "naranja": "orange" },
+    { "clementina": "clementine" },
+    { "higo": "fig" },
+    { "mora": "blackberry" },
+    { "arándano": "blueberry/cranberry" },
+    { "frambuesa": "raspberry" },
+    { "ciruela": "plum" },
+    { "granada": "pomegranate" },
+    { "lima": "lime" },
+    { "limón": "lemon" },
+    
+    // Vegetables
+    { "Lechuga": "lettuce" },
+    { "tomate": "tomato" },
+    { "papa": "potato" },
+    { "patata": "potato" },
+    { "batata": "sweet potato" },
+    { "coliflor": "cauliflower" },
+    { "repollo": "cabbage" },
+    { "brócoli": "broccoli" },
+    { "zanahoria": "carrot" },
+    { "berenjena": "eggplant" },
+    { "calabaza": "pumpkin" },
+    { "calabacín": "zucchini" },
+    { "pepino": "cucumber" },
+    { "okra": "okra" },
+    { "quiabo": "okra" },
+    { "ajo": "garlic" },
+    { "cebolla": "onion" },
+    { "pimiento": "bell pepper" },
+    { "champiñón": "mushroom" },
+    { "seta": "mushroom" },
+    { "espinaca": "spinach" },
+    { "judías verdes": "green beans" },
+    { "frijoles": "beans" },
+    { "habichuelas": "beans" },
+    { "guisantes": "peas" },
+    { "arvejas": "peas" },
+    { "espárragos": "asparagus" },
+    
+    // Other Foods
+    { "Pan": "bread" },
+    { "arroz": "rice" },
+    { "huevo": "egg" },
+    { "carne": "meat" },
+    { "cerdo": "pork" },
+    { "pollo": "chicken" },
+    { "res": "beef" },
+    { "vaca": "beef/cow" },
+    { "pescado": "fish" },
+    { "pasta": "pasta" },
+    { "miel": "honey" },
+    { "azúcar": "sugar" },
+    
+    // Drinks
+    { "Agua": "water" },
+    { "café": "coffee" },
+    { "té": "tea" },
+    { "cerveza": "beer" },
+    { "leche": "milk" },
+    
+    // Dining
+    { "Desayuno": "breakfast" },
+    { "almuerzo": "lunch" },
+    { "cena": "dinner" },
+    { "horno": "oven" },
+    { "estufa": "stove" },
+    { "microondas": "microwave" },
+    { "basura": "trash" },
+    { "sartén": "pan" },
+    { "plato": "plate" },
+    { "tenedor": "fork" },
+    { "cuchillo": "knife" },
+    { "cuchara": "spoon" },
+    { "vaso": "glass" },
+    { "taza": "cup" },
+    { "sal": "salt" },
+    { "dulce": "sweet" },
+    { "picante": "spicy" },
+    { "agrio": "sour" },
+    { "amargo": "bitter" },
+    
+    // Home & Objects - Rooms
+    { "Casa": "house" },
+    { "cocina": "kitchen" },
+    { "salón": "living room" },
+    { "comedor": "dining room" },
+    { "dormitorio": "bedroom" },
+    { "habitación": "room" },
+    { "cuarto": "room" },
+    { "baño": "bathroom" },
+    { "sótano": "basement" },
+    
+    // Furniture & Fixtures
+    { "Escaleras": "stairs" },
+    { "puerta": "door" },
+    { "ventana": "window" },
+    { "techo": "ceiling" },
+    { "lámpara": "lamp" },
+    { "reloj": "clock/watch" },
+    { "televisión": "television" },
+    { "cama": "bed" },
+    { "armario": "wardrobe/closet" },
+    { "refrigerador": "refrigerator" },
+    { "frigorífico": "refrigerator" },
+    { "fregadero": "kitchen sink" },
+    { "lavamanos": "bathroom sink" },
+    { "espejo": "mirror" },
+    { "ducha": "shower" },
+    { "inodoro": "toilet" },
+    { "bañera": "bathtub" },
+    
+    // Bathroom Items
+    { "Cepillo": "brush" },
+    { "cepillo de dientes": "toothbrush" },
+    { "secador": "hair dryer" },
+    { "jabón": "soap" },
+    { "champú": "shampoo" },
+    { "acondicionador": "conditioner" },
+    { "crema dental": "toothpaste" },
+    { "esponja": "sponge" },
+    { "papel higiénico": "toilet paper" },
+    { "toalla": "towel" },
+    
+    // Cleaning
+    { "Limpiar": "to clean" },
+    { "lavar": "to wash" },
+    { "barrer": "to sweep" },
+    
+    // Places & Directions
+    { "Lugar": "place" },
+    { "tienda": "store" },
+    { "escuela": "school" },
+    { "biblioteca": "library" },
+    { "supermercado": "supermarket" },
+    { "edificio": "building" },
+    { "oficina": "office" },
+    { "estación de tren": "train station" },
+    { "estación de autobús": "bus station" },
+    { "playa": "beach" },
+    { "restaurante": "restaurant" },
+    { "parque": "park" },
+    { "iglesia": "church" },
+    { "cine": "cinema/movie theater" },
+    { "correo": "post office" },
+    { "calle": "street" },
+    { "esquina": "corner" },
+    { "centro comercial": "shopping mall" },
+    { "estadio": "stadium" },
+    { "gimnasio": "gym" },
+    { "piscina": "pool" },
+    
+    // Prepositions
+    { "Al lado de": "next to/beside" },
+    { "detrás de": "behind" },
+    { "a la izquierda de": "to the left of" },
+    { "a la derecha de": "to the right of" },
+    { "entre": "between" },
+    { "enfrente": "in front of/opposite" },
+    { "delante de": "in front of" },
+    
+    // Directions
+    { "Girar": "to turn" },
+    { "cruzar": "to cross" },
+    { "seguir derecho": "to go straight" },
+    { "primero": "first" },
+    { "luego": "then/later" },
+    
+    // Clothing
+    { "Vestido": "dress" },
+    { "camisa": "shirt" },
+    { "camiseta": "t-shirt" },
+    { "pantalones": "pants" },
+    { "pantalones cortos": "shorts" },
+    { "ropa interior": "underwear" },
+    { "blusa": "blouse" },
+    { "falda": "skirt" },
+    { "traje": "suit" },
+    { "traje de baño": "swimsuit" },
+    { "calcetín": "sock" },
+    { "suéter": "sweater" },
+    { "corbata": "tie" },
+    { "zapatos": "shoes" },
+    { "botas": "boots" },
+    { "zapatillas": "sneakers" },
+    { "sombrero": "hat" },
+    { "bolso": "purse/handbag" },
+    { "cinturón": "belt" },
+    { "abrigo": "coat" },
+    { "pijama": "pajamas" },
+    
+    // Weather
+    { "Hace calor": "It's hot" },
+    { "Hace frío": "It's cold" },
+    { "Hace buen tiempo": "The weather is good" },
+    { "Hace mal tiempo": "The weather is bad" },
+    { "Hace sol": "It's sunny" },
+    { "nublado": "cloudy" },
+    { "soleado": "sunny" },
+    { "hay viento": "it's windy" },
+    { "nieve": "snow" },
+    { "lluvia": "rain" },
+    { "tormenta": "storm" },
+    { "nube": "cloud" },
+    { "trueno": "thunder" },
+    { "relámpago": "lightning" },
+    { "Está nevando": "It's snowing" },
+    { "Está lluvioso": "It's rainy" },
+    { "Está tormentoso": "It's stormy" },
+    
+    // Seasons
+    { "Primavera": "spring" },
+    { "verano": "summer" },
+    { "otoño": "autumn/fall" },
+    { "invierno": "winter" },
+    
+    // Celestial
+    { "Sol": "sun" },
+    { "luna": "moon" },
+    
+    // Animals
+    { "Gato": "cat" },
+    { "perro": "dog" },
+    { "pájaro": "bird" },
+    { "elefante": "elephant" },
+    { "león": "lion" },
+    { "oso": "bear" },
+    { "caballo": "horse" },
+    { "tigre": "tiger" },
+    { "toro": "bull" },
+    { "tortuga": "turtle" },
+    { "cerdo": "pig" },
+    { "vaca": "cow" },
+    { "oveja": "sheep" },
+    { "pato": "duck" },
+    
+    // Body Parts
+    { "Cabeza": "head" },
+    { "cara": "face" },
+    { "ojos": "eyes" },
+    { "orejas": "ears" },
+    { "pecho": "chest" },
+    { "brazos": "arms" },
+    { "piernas": "legs" },
+    { "pies": "feet" },
+    { "manos": "hands" },
+    { "dedos": "fingers" },
+    { "dedos de pies": "toes" },
+    { "espalda": "back" },
+    { "rodilla": "knee" },
+    { "codo": "elbow" },
+    { "hombro": "shoulder" },
+    { "tobillo": "ankle" },
+    { "dientes": "teeth" },
+    { "estómago": "stomach" },
+    { "cadera": "hip" },
+    { "pelo": "hair" },
+    { "cabello": "hair" },
+    { "muñeca": "wrist" },
+    
+    // Physical Descriptions
+    { "Alto": "tall (male)" },
+    { "alta": "tall (female)" },
+    { "bajo": "short (male)" },
+    { "baja": "short (female)" },
+    { "delgado": "thin/slim (male)" },
+    { "delgada": "thin/slim (female)" },
+    { "gordo": "fat (male)" },
+    { "gorda": "fat (female)" },
+    { "guapo": "handsome/good-looking (male)" },
+    { "guapa": "beautiful/good-looking (female)" },
+    { "hermoso": "beautiful/handsome (male)" },
+    { "hermosa": "beautiful (female)" },
+    { "feo": "ugly (male)" },
+    { "fea": "ugly (female)" },
+    { "fuerte": "strong" },
+    { "musculoso": "muscular (male)" },
+    { "musculosa": "muscular (female)" },
+    { "moreno": "dark-haired/dark-skinned (male)" },
+    { "morena": "dark-haired/dark-skinned (female)" },
+    { "rubio": "blonde (male)" },
+    { "rubia": "blonde (female)" },
+    { "pelirrojo": "red-haired (male)" },
+    { "pelirroja": "red-haired (female)" },
+    { "canoso": "gray-haired" },
+    { "joven": "young" },
+    { "viejo": "old (male)" },
+    { "vieja": "old (female)" },
+    { "mayor": "older" },
+    { "pálido": "pale (male)" },
+    { "pálida": "pale (female)" },
+    
+    // Personality
+    { "Amable": "kind" },
+    { "valiente": "brave" },
+    { "sensible": "sensitive" },
+    { "horrible": "horrible" },
+    { "ambicioso": "ambitious (male)" },
+    { "ambiciosa": "ambitious (female)" },
+    { "apasionado": "passionate (male)" },
+    { "apasionada": "passionate (female)" },
+    { "cuidadoso": "careful (male)" },
+    { "cuidadosa": "careful (female)" },
+    { "cínico": "cynical (male)" },
+    { "cínica": "cynical (female)" },
+    { "dependiente": "dependent" },
+    { "independiente": "independent" },
+    { "divertido": "fun (male)" },
+    { "divertida": "fun (female)" },
+    { "gracioso": "funny (male)" },
+    { "graciosa": "funny (female)" },
+    { "dulce": "sweet" },
+    { "educado": "polite (male)" },
+    { "educada": "polite (female)" },
+    { "inteligente": "intelligent" },
+    { "generoso": "generous (male)" },
+    { "generosa": "generous (female)" },
+    { "paciente": "patient" },
+    { "impaciente": "impatient" },
+    { "impulsivo": "impulsive (male)" },
+    { "impulsiva": "impulsive (female)" },
+    { "interesante": "interesting" },
+    { "malo": "bad (male)" },
+    { "mala": "bad (female)" },
+    { "mentiroso": "liar (male)" },
+    { "mentirosa": "liar (female)" },
+    { "perezoso": "lazy (male)" },
+    { "perezosa": "lazy (female)" },
+    { "poderoso": "powerful (male)" },
+    { "poderosa": "powerful (female)" },
+    { "positivo": "positive (male)" },
+    { "positiva": "positive (female)" },
+    { "reservado": "reserved (male)" },
+    { "reservada": "reserved (female)" },
+    { "serio": "serious (male)" },
+    { "seria": "serious (female)" },
+    { "simpático": "nice/pleasant (male)" },
+    { "simpática": "nice/pleasant (female)" },
+    { "talentoso": "talented (male)" },
+    { "talentosa": "talented (female)" },
+    
+    // Emotions
+    { "Feliz": "happy" },
+    { "triste": "sad" },
+    { "emocionado": "excited (male)" },
+    { "emocionada": "excited (female)" },
+    { "cansado": "tired (male)" },
+    { "cansada": "tired (female)" },
+    { "enfadado": "angry (male)" },
+    { "enfadada": "angry (female)" },
+    { "enojado": "angry (male)" },
+    { "enojada": "angry (female)" },
+    { "preocupado": "worried (male)" },
+    { "preocupada": "worried (female)" },
+    { "aburrido": "bored (male)" },
+    { "aburrida": "bored (female)" },
+    { "confundido": "confused (male)" },
+    { "confundida": "confused (female)" },
+    { "enamorado": "in love (male)" },
+    { "enamorada": "in love (female)" },
+    { "asustado": "scared (male)" },
+    { "asustada": "scared (female)" },
+    { "frustrado": "frustrated (male)" },
+    { "frustrada": "frustrated (female)" },
+    { "sorprendido": "surprised (male)" },
+    { "sorprendida": "surprised (female)" },
+    { "cómodo": "comfortable (male)" },
+    { "cómoda": "comfortable (female)" },
+    { "incómodo": "uncomfortable (male)" },
+    { "incómoda": "uncomfortable (female)" },
+    { "avergonzado": "embarrassed (male)" },
+    { "avergonzada": "embarrassed (female)" },
+    { "tímido": "shy (male)" },
+    { "tímida": "shy (female)" },
+    { "nervioso": "nervous (male)" },
+    { "nerviosa": "nervous (female)" },
+    { "ansioso": "anxious (male)" },
+    { "ansiosa": "anxious (female)" },
+    
+    // Sports
+    { "Béisbol": "baseball" },
+    { "fútbol": "soccer/football" },
+    { "baloncesto": "basketball" },
+    { "básquetbol": "basketball" },
+    { "golf": "golf" },
+    { "hockey": "hockey" },
+    { "tenis": "tennis" },
+    { "voleibol": "volleyball" },
+    { "equipo": "team" },
+    { "carrera": "race" },
+    { "pelota": "ball" },
+    { "raqueta": "racket" },
+    { "red": "net" },
+    
+    // Sports Verbs
+    { "jugar": "to play" },
+    { "practicar": "to practice" },
+    { "ganar": "to win" },
+    { "perder": "to lose" },
+    { "empatar": "to tie/draw" },
+    { "tirar": "to throw" },
+    { "patear": "to kick" },
+    { "esquiar": "to ski" },
+    
+    // Days of the Week
+    { "Lunes": "Monday" },
+    { "martes": "Tuesday" },
+    { "miércoles": "Wednesday" },
+    { "jueves": "Thursday" },
+    { "viernes": "Friday" },
+    { "sábado": "Saturday" },
+    { "domingo": "Sunday" },
+    
+    // Months
+    { "Enero": "January" },
+    { "febrero": "February" },
+    { "marzo": "March" },
+    { "abril": "April" },
+    { "mayo": "May" },
+    { "junio": "June" },
+    { "julio": "July" },
+    { "agosto": "August" },
+    { "septiembre": "September" },
+    { "octubre": "October" },
+    { "noviembre": "November" },
+    { "diciembre": "December" },
+    
+    // Time & Dates
+    { "Año": "year" },
+    { "mes": "month" },
+    { "semana": "week" },
+    { "día": "day" },
+    { "hora": "hour" },
+    { "ayer": "yesterday" },
+    { "hoy": "today" },
+    { "mañana": "tomorrow/morning" },
+    { "pasado mañana": "the day after tomorrow" },
+    { "tarde": "afternoon/evening/late" },
+    { "noche": "night" },
+    { "fin de semana": "weekend" },
+    
+    // Telling Time
+    { "Es la": "It's (for 1 o'clock)" },
+    { "Son las": "It's (for other hours)" },
+    { "y media": "half past" },
+    { "y cuarto": "quarter past" },
+    { "menos cuarto": "quarter to" },
+    
+    // Numbers 0-20
+    { "cero": "zero" },
+    { "uno": "one" },
+    { "dos": "two" },
+    { "tres": "three" },
+    { "cuatro": "four" },
+    { "cinco": "five" },
+    { "seis": "six" },
+    { "siete": "seven" },
+    { "ocho": "eight" },
+    { "nueve": "nine" },
+    { "diez": "ten" },
+    { "once": "eleven" },
+    { "doce": "twelve" },
+    { "trece": "thirteen" },
+    { "catorce": "fourteen" },
+    { "quince": "fifteen" },
+    { "dieciséis": "sixteen" },
+    { "diecisiete": "seventeen" },
+    { "dieciocho": "eighteen" },
+    { "diecinueve": "nineteen" },
+    { "veinte": "twenty" },
+    
+    // Tens and Hundreds
+    { "treinta": "thirty" },
+    { "cuarenta": "forty" },
+    { "cincuenta": "fifty" },
+    { "sesenta": "sixty" },
+    { "setenta": "seventy" },
+    { "ochenta": "eighty" },
+    { "noventa": "ninety" },
+    { "cien": "one hundred" },
+    { "ciento": "one hundred (before nouns)" },
+    { "doscientos": "two hundred (male)" },
+    { "doscientas": "two hundred (female)" },
+    { "quinientos": "five hundred (male)" },
+    { "quinientas": "five hundred (female)" },
+    { "mil": "thousand" },
+    
+    // Colors
+    { "Azul": "blue" },
+    { "rojo": "red" },
+    { "amarillo": "yellow" },
+    { "verde": "green" },
+    { "marrón": "brown" },
+    { "morado": "purple" },
+    { "rosa": "pink" },
+    { "negro": "black" },
+    { "blanco": "white" },
+    { "gris": "gray" },
+    { "naranja": "orange" },
+    
+    // Key Verbs
+    { "Ser": "to be (permanent)" },
+    { "estar": "to be (temporary/location)" },
+    { "tener": "to have" },
+    { "haber": "to have (auxiliary)/there is/are" },
+    { "ir": "to go" },
+    { "querer": "to want/to love" },
+    { "poder": "to be able to/can" },
+    { "hacer": "to do/to make" },
+    { "decir": "to say/to tell" },
+    { "dar": "to give" },
+    { "ver": "to see" },
+    { "saber": "to know (facts)" },
+    { "conocer": "to know (people/places)" },
+    { "poner": "to put" },
+    { "salir": "to go out/to leave" },
+    { "venir": "to come" },
+    { "traer": "to bring" },
+    { "pensar": "to think" },
+    { "sentir": "to feel/to regret" },
+    { "gustar": "to like" },
+    { "encantar": "to love (things)" },
+    { "necesitar": "to need" },
+    { "comprar": "to buy" },
+    { "costar": "to cost" },
+    { "probar": "to try/to taste" },
+    { "tocar": "to touch/to play (instrument)" },
+    { "cepillarse": "to brush (oneself)" },
+    { "ducharse": "to shower (oneself)" },
+    
+    // Question Words
+    { "Qué": "what" },
+    { "quién": "who" },
+    { "cuándo": "when" },
+    { "dónde": "where" },
+    { "por qué": "why" },
+    { "cómo": "how" },
+    { "cuánto": "how much (male)" },
+    { "cuánta": "how much (female)" },
+    { "cuántos": "how many (male)" },
+    { "cuántas": "how many (female)" },
+    
+    // Possessives
+    { "Mi": "my" },
+    { "tu": "your (informal)" },
+    { "su": "his/her/your (formal)/their" },
+    { "nuestro": "our (male)" },
+    { "nuestra": "our (female)" },
+    { "vuestro": "your (plural, Spain, male)" },
+    { "vuestra": "your (plural, Spain, female)" },
+    { "mío": "mine (male)" },
+    { "mía": "mine (female)" },
+    { "tuyo": "yours (informal, male)" },
+    { "tuya": "yours (informal, female)" },
+    { "suyo": "his/hers/yours (formal)/theirs (male)" },
+    { "suya": "his/hers/yours (formal)/theirs (female)" },
+    
+    // Demonstratives
+    { "Este": "this (male)" },
+    { "esta": "this (female)" },
+    { "eso": "that (neuter)" },
+    { "esa": "that (female)" },
+    { "aquel": "that (over there, male)" },
+    { "aquella": "that (over there, female)" },
+    
+    // Pronouns
+    { "Yo": "I" },
+    { "tú": "you (informal)" },
+    { "él": "he" },
+    { "ella": "she" },
+    { "usted": "you (formal)" },
+    { "nosotros": "we (male/mixed)" },
+    { "nosotras": "we (female)" },
+    { "vosotros": "you all (Spain, male/mixed)" },
+    { "vosotras": "you all (Spain, female)" },
+    { "ellos": "they (male/mixed)" },
+    { "ellas": "they (female)" },
+    { "ustedes": "you all (formal/Latin America)" },
+    
+    // Object Pronouns
+    { "Me": "me/to me" },
+    { "te": "you/to you (informal)" },
+    { "se": "himself/herself/yourself/themselves" },
+    { "nos": "us/to us" },
+    { "os": "you all/to you all (Spain)" },
+    { "lo": "him/it (male, direct object)" },
+    { "la": "her/it (female, direct object)" },
+    { "los": "them (male/mixed, direct object)" },
+    { "las": "them (female, direct object)" },
+    { "le": "to him/to her/to you (indirect object)" },
+    { "les": "to them/to you all (indirect object)" },
+    
+    // Miscellaneous
+    { "Ejercicio": "exercise" },
+    { "viaje": "trip" },
+    { "clima": "climate/weather" },
+    { "dirección": "address/direction" },
+    { "precio": "price" },
+    { "rebaja": "discount/sale" },
+    { "bolsa": "bag" },
+    { "pasillo": "aisle" },
+    { "caja": "cash register/box" },
+    { "carrito": "shopping cart" },
+    { "productos lácteos": "dairy products" },
+    { "cortesía": "courtesy" },
+    { "sueño": "sleep/dream" }
+        ];
+
+        const grammarBank = [
+            // 1. Pronunciation
+            { id: 'g_silent_h', type: 'grammar', promptEs: 'Which letter is silent in "hola"?', acceptable: ['h'], topic: 'Pronunciation' },
+            { id: 'g_ll_sound', type: 'grammar', promptEs: 'The "ll" in "llamar" sounds like which English letter? (y/j/w)', acceptable: ['y'], topic: 'Pronunciation' },
+
+            // 2. Nouns & Articles
+            { id: 'g_art_fem', type: 'grammar', promptEs: 'Definite article for "mesa" (el/la)', acceptable: ['la'], topic: 'Articles' },
+            { id: 'g_art_masc', type: 'grammar', promptEs: 'Definite article for "libro" (el/la)', acceptable: ['el'], topic: 'Articles' },
+            { id: 'g_art_agua', type: 'grammar', promptEs: 'Definite article for "agua" (el/la)', acceptable: ['el'], topic: 'Articles' },
+            { id: 'g_art_mano', type: 'grammar', promptEs: 'Definite article for "mano" (el/la)', acceptable: ['la'], topic: 'Articles' },
+            { id: 'g_art_prob', type: 'grammar', promptEs: 'Definite article for "problema" (el/la)', acceptable: ['el'], topic: 'Articles' },
+            { id: 'g_plur_vowel', type: 'grammar', promptEs: 'Plural of "casa"', acceptable: ['casas'], topic: 'Pluralization' },
+            { id: 'g_plur_cons', type: 'grammar', promptEs: 'Plural of "papel"', acceptable: ['papeles'], topic: 'Pluralization' },
+
+            // 3. Adjectives
+            { id: 'g_adj_agree', type: 'grammar', promptEs: 'casas ___ (blanco/blanca/blancos/blancas)', acceptable: ['blancas'], topic: 'Adjectives' },
+
+            // 4. Subject Pronouns
+            { id: 'g_pron_we_m', type: 'grammar', promptEs: 'Translate "We" (masculine)', acceptable: ['nosotros'], topic: 'Pronouns' },
+            { id: 'g_pron_they_f', type: 'grammar', promptEs: 'Translate "They" (feminine)', acceptable: ['ellas'], topic: 'Pronouns' },
+
+            // 5. Conjugation (Present)
+            { id: 'g_pres_ar_yo', type: 'grammar', promptEs: 'Conjugate: hablar (yo)', acceptable: ['hablo'], topic: 'Present Tense' },
+            { id: 'g_pres_er_tu', type: 'grammar', promptEs: 'Conjugate: comer (tú)', acceptable: ['comes'], topic: 'Present Tense' },
+            { id: 'g_pres_ir_nos', type: 'grammar', promptEs: 'Conjugate: vivir (nosotros)', acceptable: ['vivimos'], topic: 'Present Tense' },
+            { id: 'g_irr_ser_yo', type: 'grammar', promptEs: 'Conjugate: ser (yo)', acceptable: ['soy'], topic: 'Irregular Verbs' },
+            { id: 'g_irr_estar_tu', type: 'grammar', promptEs: 'Conjugate: estar (tú)', acceptable: ['estás', 'estas'], topic: 'Irregular Verbs' },
+            { id: 'g_irr_ir_yo', type: 'grammar', promptEs: 'Conjugate: ir (yo)', acceptable: ['voy'], topic: 'Irregular Verbs' },
+            { id: 'g_irr_tener_yo', type: 'grammar', promptEs: 'Conjugate: tener (yo)', acceptable: ['tengo'], topic: 'Irregular Verbs' },
+
+            // 6. Tenses
+            { id: 'g_prog_ando', type: 'grammar', promptEs: 'Walking: camin___ (suffix)', acceptable: ['ando'], topic: 'Present Progressive' },
+            { id: 'g_fut_voy', type: 'grammar', promptEs: 'I am going to eat: ___ a comer', acceptable: ['voy'], topic: 'Near Future' },
+
+            // 7. Ser vs Estar
+            { id: 'g_ser_prof', type: 'grammar', promptEs: '___ médico (Soy/Estoy)', acceptable: ['soy'], topic: 'Ser vs Estar' },
+            { id: 'g_est_loc', type: 'grammar', promptEs: '___ en casa (Soy/Estoy)', acceptable: ['estoy'], topic: 'Ser vs Estar' },
+
+            // 8. Question Words
+            { id: 'g_qw_who', type: 'grammar', promptEs: 'Translate "Who"', acceptable: ['quién', 'quien'], topic: 'Question Words' },
+            { id: 'g_qw_where', type: 'grammar', promptEs: 'Translate "Where"', acceptable: ['dónde', 'donde'], topic: 'Question Words' },
+
+            // 9. Prepositions
+            { id: 'g_prep_with', type: 'grammar', promptEs: 'Translate "With"', acceptable: ['con'], topic: 'Prepositions' },
+            { id: 'g_prep_without', type: 'grammar', promptEs: 'Translate "Without"', acceptable: ['sin'], topic: 'Prepositions' },
+
+            // 10. Numbers/Time
+            { id: 'g_num_100', type: 'grammar', promptEs: 'Number 100', acceptable: ['cien'], topic: 'Numbers' },
+            { id: 'g_time_1', type: 'grammar', promptEs: '___ la una (Es/Son)', acceptable: ['es'], topic: 'Time' },
+            { id: 'g_time_2', type: 'grammar', promptEs: '___ las dos (Es/Son)', acceptable: ['son'], topic: 'Time' },
+
+            // 11. Possession
+            { id: 'g_poss_mi', type: 'grammar', promptEs: '___ casa (My)', acceptable: ['mi'], topic: 'Possession' },
+            
+            // 12. Demonstratives
+            { id: 'g_demo_this', type: 'grammar', promptEs: 'Translate "This" (masculine)', acceptable: ['este'], topic: 'Demonstratives' },
+
+            // 13. Object Pronouns
+            { id: 'g_obj_lo', type: 'grammar', promptEs: 'I see him/it: ___ veo', acceptable: ['lo'], topic: 'Object Pronouns' },
+            
+            // 14. Gustar
+            { id: 'g_gust_pl', type: 'grammar', promptEs: 'Me ___ los libros (gusta/gustan)', acceptable: ['gustan'], topic: 'Gustar' },
+
+            // 15. Weather
+            { id: 'g_weath_hace', type: 'grammar', promptEs: '___ calor (Hace/Esta)', acceptable: ['hace'], topic: 'Weather' },
+
+            // 16. Phrases
+            { id: 'g_phr_name', type: 'grammar', promptEs: 'Me ___ Juan (call/name)', acceptable: ['llamo'], topic: 'Phrases' },
+            { id: 'g_polite_plz', type: 'grammar', promptEs: 'Translate "Please"', acceptable: ['por favor'], topic: 'Phrases' },
+
+            // 17. Word Order
+            { id: 'g_neg_no', type: 'grammar', promptEs: 'I don\'t have money: ___ tengo dinero', acceptable: ['no'], topic: 'Negation' },
+
+            // 18. Contractions
+            { id: 'g_contr_al', type: 'grammar', promptEs: 'a + el = ___', acceptable: ['al'], topic: 'Contractions' },
+            { id: 'g_contr_del', type: 'grammar', promptEs: 'de + el = ___', acceptable: ['del'], topic: 'Contractions' },
+
+            // 19. Comparatives
+            { id: 'g_comp_que', type: 'grammar', promptEs: 'Más ... ___ (than)', acceptable: ['que'], topic: 'Comparatives' }
+        ];
+
+        // State
+        let quizQueue = [];
+        let currentCard = null;
+        let correctCounts = {};
+        let totalItems = 0;
+        let itemsDone = 0;
+        let isProcessing = false;
+        
+        // Session Data for Export
+        let sessionNewWords = [];
+        let sessionReviewWords = [];
+
+        // Elements
+        const setupScreen = document.getElementById('setupScreen');
+        const quizScreen = document.getElementById('quizScreen');
+        const progressInput = document.getElementById('progressInput');
+        const questionWordEl = document.getElementById('questionWord');
+        const answerInput = document.getElementById('answerInput');
+        const statsDisplay = document.getElementById('statsDisplay');
+        const progressBar = document.getElementById('progressBar');
+        const langIndicator = document.getElementById('langIndicator');
+
+        // Logic
+        function startQuiz() {
+            const learnedCount = parseInt(progressInput.value) || 0;
+            
+            // 1. Identify segments
+            const startPrior = Math.max(0, learnedCount - 40);
+            const priorWords = fullWordList.slice(startPrior, learnedCount);
+            const newWords = fullWordList.slice(learnedCount, learnedCount + 20);
+
+            let randomWords = [];
+            if (startPrior > 0) {
+                const pool = fullWordList.slice(0, startPrior);
+                pool.sort(() => Math.random() - 0.5);
+                randomWords = pool.slice(0, 40);
+            }
+
+            // Store for AI Prompt (Unique Spanish words)
+            sessionNewWords = newWords.map(w => w.es);
+            sessionReviewWords = [...new Set([...priorWords, ...randomWords].map(w => w.es))];
+
+            // 2. Build Base Array (Weighted)
+            // "The 20 new words are copied twice (so there are three times as many of them)"
+            const newWordsTripled = [];
+            newWords.forEach(w => {
+                newWordsTripled.push(w, w, w);
+            });
+
+            const baseSet = [
+                ...priorWords,
+                ...newWordsTripled,
+                ...randomWords
+            ];
+
+            // 3. Replicate 10 times
+            let finalArray = [];
+            for (let i = 0; i < 10; i++) {
+                finalArray = finalArray.concat(baseSet);
+            }
+
+            if (finalArray.length === 0) {
+                alert("Please increase the number of learned words or check the word list.");
+                return;
+            }
+
+            // 4. Shuffle Final Queue
+            quizQueue = finalArray.sort(() => Math.random() - 0.5);
+
+            // 4b. Mix in Grammar (Easy -> Hard maps to End -> Start of array)
+            // We want 'Easy' (index 0) to be popped earlier (End of array).
+            // We want 'Hard' (index N) to be popped later (Start of array).
+            const segmentSize = Math.floor(quizQueue.length / (grammarBank.length || 1));
+            
+            grammarBank.forEach((gItem, index) => {
+                // Calculate target bucket: 
+                // index 0 (Easy) -> Last bucket
+                // index N (Hard) -> First bucket
+                const bucketIndex = (grammarBank.length - 1) - index;
+                
+                // Random position within that bucket
+                let pos = (bucketIndex * segmentSize) + Math.floor(Math.random() * segmentSize);
+                
+                // Clamp to bounds
+                pos = Math.max(0, Math.min(pos, quizQueue.length));
+                
+                quizQueue.splice(pos, 0, gItem);
+            });
+
+            // 5. Add Intro Phase (New Words x 2)
+            // "The quiz should begin by going over the new words twice"
+            // We create a separate list of just the new words repeated twice, then push them to the END of the array
+            // (since we .pop() from the end to get the next card).
+            const introWords = [];
+            // Add first pass (in order)
+            introWords.push(...newWords);
+            // Add second pass (in order)
+            introWords.push(...newWords);
+            
+            // Since we pop() from the end, to show them first, we must put them at the END of the array.
+            // But we want them to appear in order 1..20, then 1..20.
+            // If we push [1,2,3], popping gives 3,2,1.
+            // So we need to reverse them before pushing if we want them in order.
+            introWords.reverse();
+
+            // Append intro words to the queue (which is the stack we pop from)
+            quizQueue.push(...introWords);
+
+            totalItems = quizQueue.length;
+            itemsDone = 0;
+
+            // Reset stats for new words
+            newWords.forEach(w => {
+                if (!correctCounts[w.es]) correctCounts[w.es] = 0;
+            });
+
+            setupScreen.classList.add('hidden');
+            quizScreen.classList.remove('hidden');
+            
+            nextCard();
+        }
+
+        function nextCard() {
+            if (quizQueue.length === 0) {
+                alert("Quiz Complete! Great job.");
+                location.reload();
+                return;
+            }
+
+            isProcessing = false;
+            const wordObj = quizQueue.pop();
+            itemsDone++;
+            updateProgress();
+
+            if (wordObj.type === 'grammar') {
+                currentCard = {
+                    wordObj: wordObj,
+                    mode: 'grammar',
+                    question: wordObj.promptEs,
+                    answer: wordObj.acceptable[0],
+                    acceptable: wordObj.acceptable
+                };
+                questionWordEl.textContent = currentCard.question;
+                langIndicator.textContent = `Grammar: ${wordObj.topic}`;
+            } else {
+                const mode = Math.random() < 0.5 ? 'toEN' : 'toES';
+                
+                currentCard = {
+                    wordObj: wordObj,
+                    mode: mode,
+                    question: mode === 'toEN' ? wordObj.es : wordObj.en,
+                    answer: mode === 'toEN' ? wordObj.en : wordObj.es,
+                    acceptable: [mode === 'toEN' ? wordObj.en : wordObj.es]
+                };
+
+                questionWordEl.textContent = currentCard.question;
+                langIndicator.textContent = mode === 'toEN' ? "Spanish → English" : "English → Spanish";
+            }
+            
+            answerInput.value = "";
+            answerInput.className = "";
+            answerInput.focus();
+            statsDisplay.textContent = "";
+        }
+
+        function checkAnswer() {
+            if (isProcessing) return;
+
+            const userVal = answerInput.value.trim().toLowerCase();
+            // Check if any acceptable answer matches
+            const isCorrect = currentCard.acceptable.some(a => a.toLowerCase() === userVal);
+            
+            isProcessing = true;
+
+            if (isCorrect) {
+                // Correct
+                answerInput.classList.add('input-correct');
+                
+                if (currentCard.wordObj.es && correctCounts.hasOwnProperty(currentCard.wordObj.es)) {
+                    correctCounts[currentCard.wordObj.es]++;
+                    statsDisplay.textContent = `Correct! You've mastered "${currentCard.wordObj.es}" ${correctCounts[currentCard.wordObj.es]} times.`;
+                } else {
+                    statsDisplay.textContent = "Correct!";
+                }
+
+                setTimeout(() => {
+                    nextCard();
+                }, 1000);
+
+            } else {
+                // Incorrect
+                answerInput.classList.add('input-incorrect');
+                statsDisplay.style.color = "var(--error)";
+                statsDisplay.textContent = `Incorrect. The answer was "${currentCard.answer}".`;
+
+                setTimeout(() => {
+                    statsDisplay.style.color = ""; // Reset color
+                    nextCard();
+                }, 2000);
+            }
+        }
+
+        function updateProgress() {
+            const pct = (itemsDone / totalItems) * 100;
+            progressBar.style.width = pct + "%";
+        }
+
+        function copyAiPrompt() {
+            if (sessionNewWords.length === 0 && sessionReviewWords.length === 0) {
+                alert("Start the quiz first to generate a prompt.");
+                return;
+            }
+
+            const promptText = `I would like you to help me practice Spanish by having a conversation with me using only these Spanish words. Please try to use the newly added words (listed first) more frequently than the rest in order to help me remember them.
+
+NEW WORDS (Prioritize these):
+${sessionNewWords.join(', ')}
+
+REVIEW WORDS:
+${sessionReviewWords.join(', ')}`;
+
+            navigator.clipboard.writeText(promptText).then(() => {
+                const btn = document.querySelector('.btn-outline');
+                const originalText = btn.textContent;
+                btn.textContent = "✅ Copied to Clipboard!";
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+                alert("Failed to copy to clipboard. Please allow clipboard permissions.");
+            });
+        }
+
+        // Event Listeners
+        answerInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                checkAnswer();
+            }
+        });
+
+    </script>
+</body>
+</html>
