@@ -226,7 +226,7 @@
 
     <script>
         // Placeholder list - REPLACE THIS with your full 1000 word list
-        const fullWordList = [
+        const rawWordList = [
                { "Hola": "Hello" },
     { "Buenos días": "Good morning" },
     { "Buenas tardes": "Good afternoon" },
@@ -898,6 +898,11 @@
     { "cortesía": "courtesy" },
     { "sueño": "sleep/dream" }
         ];
+
+        const fullWordList = rawWordList.map(obj => {
+            const key = Object.keys(obj)[0];
+            return { es: key, en: obj[key] };
+        });
 
         const grammarBank = [
             // 1. Pronunciation
