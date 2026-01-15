@@ -200,6 +200,7 @@
         </div>
 
         <button class="btn" onclick="startQuiz()">Start Quiz</button>
+        <button class="btn btn-outline" onclick="resetProgress()">Reset Progress</button>
     </div>
 
     <!-- Quiz Screen -->
@@ -1122,6 +1123,7 @@
             setupScreen.classList.add('hidden');
             quizScreen.classList.remove('hidden');
             
+            saveProgress();
             nextCard();
         }
 
@@ -1274,6 +1276,7 @@
             if (currentCard.wordObj.es) {
                 if (!correctCounts[currentCard.wordObj.es] === undefined) correctCounts[currentCard.wordObj.es] = 0;
                 correctCounts[currentCard.wordObj.es]++;
+                saveProgress();
                 statsDisplay.textContent = `Marked Correct! (Manual Override)`;
             } else {
                 statsDisplay.textContent = "Marked Correct!";
@@ -1312,6 +1315,7 @@
                 
                 if (currentCard.wordObj.es && correctCounts.hasOwnProperty(currentCard.wordObj.es)) {
                     correctCounts[currentCard.wordObj.es]++;
+                    saveProgress();
                     statsDisplay.textContent = `Correct! You've mastered "${currentCard.wordObj.es}" ${correctCounts[currentCard.wordObj.es]} times.`;
                 } else {
                     statsDisplay.textContent = "Correct!";
@@ -1408,6 +1412,39 @@ ${sessionReviewWords.join(', ')}`;
                 alert("Failed to copy to clipboard. Please allow clipboard permissions.");
             });
         }
+
+        function loadProgress() {
+            const savedCounts = localStorage.getItem('spanishApp_correctCounts');
+            if (savedCounts) {
+                try {
+                    correctCounts = JSON.parse(savedCounts);
+                } catch (e) {
+                    console.error("Error parsing saved progress", e);
+                }
+            }
+            const savedLearned = localStorage.getItem('spanishApp_learnedCount');
+            if (savedLearned) {
+                progressInput.value = savedLearned;
+            }
+        }
+
+        function saveProgress() {
+            localStorage.setItem('spanishApp_correctCounts', JSON.stringify(correctCounts));
+            localStorage.setItem('spanishApp_learnedCount', progressInput.value);
+        }
+
+        function resetProgress() {
+            if (confirm("Are you sure you want to reset all progress? This cannot be undone.")) {
+                localStorage.removeItem('spanishApp_correctCounts');
+                localStorage.removeItem('spanishApp_learnedCount');
+                correctCounts = {};
+                progressInput.value = "";
+                location.reload();
+            }
+        }
+
+        // Initialize
+        loadProgress();
 
         // Event Listeners
         answerInput.addEventListener('keydown', (e) => {
