@@ -48,7 +48,7 @@ const accepted = parseAnswers(rawAnswer);
 console.log("Raw Answer:", rawAnswer);
 console.log("Accepted Answers:", JSON.stringify(accepted));
 
-const normalize = (str) => str.toLowerCase().replace(/[.,?!¡¿]/g, '').trim();
+const normalize = (str) => str.toLowerCase().replace(/[.,?!¡¿]/g, '').replace(/-/g, ' ').trim();
 
 const userInputs = ["Very good", "Very well", "Very good/Very well"];
 

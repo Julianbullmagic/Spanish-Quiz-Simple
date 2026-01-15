@@ -1241,6 +1241,9 @@
             // 1. Lowercase & Punctuation
             let str = text.toLowerCase().replace(/[.,?!¡¿]/g, '');
             
+            // Replace hyphens with spaces
+            str = str.replace(/-/g, ' ');
+            
             // 2. Remove text in parentheses
             str = str.replace(/\s*\(.*\)/g, ' ');
             
