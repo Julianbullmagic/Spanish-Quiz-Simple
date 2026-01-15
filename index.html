@@ -992,6 +992,7 @@
         let totalItems = 0;
         let itemsDone = 0;
         let isProcessing = false;
+        let synonymMap = {}; // Stores English -> [Spanish1, Spanish2...]
         
         // Session Data for Export
         let sessionNewWords = [];
@@ -1009,6 +1010,20 @@
 
         // Logic
         function startQuiz() {
+            // Build Synonym Map (English -> All valid Spanish words)
+            synonymMap = {};
+            fullWordList.forEach(item => {
+                const enVariations = parseAnswers(item.en);
+                enVariations.forEach(en => {
+                    const key = en.toLowerCase().trim();
+                    if (!synonymMap[key]) synonymMap[key] = [];
+                    // Avoid duplicates
+                    if (!synonymMap[key].includes(item.es)) {
+                        synonymMap[key].push(item.es);
+                    }
+                });
+            });
+
             const learnedCount = parseInt(progressInput.value) || 0;
             
             // 1. Identify segments
@@ -1194,6 +1209,20 @@
                     acceptable: parseAnswers(rawAnswer)
                 };
 
+                // SMART SYNONYMS: If asking in English, accept ANY valid Spanish translation from our list
+                if (mode === 'toES') {
+                     // The question is English. Parse it to find lookup keys.
+                     const enQuestions = parseAnswers(wordObj.en);
+                     enQuestions.forEach(q => {
+                         const key = q.toLowerCase().trim();
+                         if (synonymMap[key]) {
+                             synonymMap[key].forEach(esSynonym => {
+                                 currentCard.acceptable.push(esSynonym);
+                             });
+                         }
+                     });
+                }
+
                 questionWordEl.textContent = currentCard.question;
                 langIndicator.textContent = mode === 'toEN' ? "Spanish → English" : "English → Spanish";
             }
@@ -1204,15 +1233,44 @@
             statsDisplay.textContent = "";
         }
 
+        function cleanAnswer(text) {
+            // 1. Lowercase & Punctuation
+            let str = text.toLowerCase().replace(/[.,?!¡¿]/g, '');
+            
+            // 2. Remove text in parentheses
+            str = str.replace(/\s*\(.*\)/g, ' ');
+            
+            // 3. Remove specific grammar tags (word boundaries)
+            const tags = [
+                'male', 'female', 'masc', 'fem', 'masculine', 'feminine', 'femanine',
+                'formal', 'informal', 'singular', 'plural', 'pl', 'sg',
+                'spain', 'latam', 'latin america'
+            ];
+            const regex = new RegExp(`\\b(${tags.join('|')})\\b`, 'g');
+            let stripped = str.replace(regex, '');
+            
+            // 4. Collapse whitespace
+            stripped = stripped.replace(/\s+/g, ' ').trim();
+            
+            // Safety: If we stripped everything (e.g. the answer was "Male"), return the basic normalized version
+            if (stripped.length === 0) {
+                return str.trim(); 
+            }
+            
+            return stripped;
+        }
+
         function checkAnswer() {
             if (isProcessing) return;
 
-            // Normalize: lowercase, remove punctuation (.,?!¡¿), trim
-            const normalize = (str) => str.toLowerCase().replace(/[.,?!¡¿]/g, '').trim();
-            const userVal = normalize(answerInput.value);
+            const userRaw = answerInput.value;
+            const userClean = cleanAnswer(userRaw);
             
             // Check if any acceptable answer matches
-            const isCorrect = currentCard.acceptable.some(a => normalize(a) === userVal);
+            // We compare the "cleaned" user input against the "cleaned" acceptable answer
+            const isCorrect = currentCard.acceptable.some(a => {
+                return cleanAnswer(a) === userClean;
+            });
             
             isProcessing = true;
 
