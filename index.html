@@ -1110,6 +1110,9 @@
         function parseAnswers(text) {
             const answers = new Set();
             
+            // Also accept the exact full string (just in case)
+            if (text) answers.add(text);
+            
             function addVariations(t) {
                 if (!t) return;
                 answers.add(t);
@@ -1232,7 +1235,13 @@
                 // Incorrect
                 answerInput.classList.add('input-incorrect');
                 statsDisplay.style.color = "var(--error)";
-                statsDisplay.textContent = `Incorrect. The answer was "${currentCard.answer}".`;
+                
+                // Show all acceptable answers to be helpful (filtering out the full combined string if it's redundant)
+                const niceList = currentCard.acceptable
+                    .filter(a => a.length < 50) // arbitrary length to avoid huge debug strings if any
+                    .join(' OR ');
+                    
+                statsDisplay.textContent = `Incorrect. Acceptable: ${niceList}`;
 
                 setTimeout(() => {
                     statsDisplay.style.color = ""; // Reset color
