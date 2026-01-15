@@ -247,8 +247,8 @@
     { "Con permiso": "Excuse me (passing through)" },
     { "Mucho gusto": "Nice to meet you" },
     { "Encantado": "Delighted (male)" },
-    { "Encantada": "Delighted (female)" },
-    { "Me llamo": "My name is" },
+    { "Encantada": "Delighted (female)/Enchanted" },
+    { "Me llamo": "My name is/I call myself" },
     { "¿Cómo te llamas?": "What's your name?" },
     
     // People & Family
@@ -1107,6 +1107,56 @@
             nextCard();
         }
 
+        function parseAnswers(text) {
+            const answers = new Set();
+            
+            function addVariations(t) {
+                if (!t) return;
+                answers.add(t);
+                
+                // Handle parentheses removal
+                const noParens = t.replace(/\s*\(.*?\)/g, '').trim();
+                if (noParens && noParens !== t) {
+                    answers.add(noParens);
+                }
+            }
+
+            // Split by slash
+            const parts = text.split('/');
+            parts.forEach(p => addVariations(p.trim()));
+
+            // Contraction expansion
+            const currentList = Array.from(answers);
+            const replacements = [
+                { pattern: /\bwhat's\b/gi, replacement: "what is" },
+                { pattern: /\bit's\b/gi, replacement: "it is" },
+                { pattern: /\bi'm\b/gi, replacement: "i am" },
+                { pattern: /\byou're\b/gi, replacement: "you are" },
+                { pattern: /\bthey're\b/gi, replacement: "they are" },
+                { pattern: /\bwe're\b/gi, replacement: "we are" },
+                { pattern: /\bthat's\b/gi, replacement: "that is" },
+                // Reverse mappings (simple checks)
+                { pattern: /\bwhat is\b/gi, replacement: "what's" },
+                { pattern: /\bit is\b/gi, replacement: "it's" },
+                { pattern: /\bi am\b/gi, replacement: "i'm" },
+                { pattern: /\byou are\b/gi, replacement: "you're" },
+                { pattern: /\bthey are\b/gi, replacement: "they're" },
+                { pattern: /\bwe are\b/gi, replacement: "we're" },
+                { pattern: /\bthat is\b/gi, replacement: "that's" }
+            ];
+
+            currentList.forEach(ans => {
+                replacements.forEach(rep => {
+                    if (rep.pattern.test(ans)) {
+                        // Replace and add (ignoring case in output)
+                        answers.add(ans.replace(rep.pattern, rep.replacement));
+                    }
+                });
+            });
+
+            return Array.from(answers);
+        }
+
         function nextCard() {
             if (quizQueue.length === 0) {
                 alert("Quiz Complete! Great job.");
@@ -1131,13 +1181,14 @@
                 langIndicator.textContent = `Grammar: ${wordObj.topic}`;
             } else {
                 const mode = Math.random() < 0.5 ? 'toEN' : 'toES';
+                const rawAnswer = mode === 'toEN' ? wordObj.en : wordObj.es;
                 
                 currentCard = {
                     wordObj: wordObj,
                     mode: mode,
                     question: mode === 'toEN' ? wordObj.es : wordObj.en,
-                    answer: mode === 'toEN' ? wordObj.en : wordObj.es,
-                    acceptable: [mode === 'toEN' ? wordObj.en : wordObj.es]
+                    answer: rawAnswer,
+                    acceptable: parseAnswers(rawAnswer)
                 };
 
                 questionWordEl.textContent = currentCard.question;
@@ -1153,9 +1204,12 @@
         function checkAnswer() {
             if (isProcessing) return;
 
-            const userVal = answerInput.value.trim().toLowerCase();
+            // Normalize: lowercase, remove punctuation (.,?!¡¿), trim
+            const normalize = (str) => str.toLowerCase().replace(/[.,?!¡¿]/g, '').trim();
+            const userVal = normalize(answerInput.value);
+            
             // Check if any acceptable answer matches
-            const isCorrect = currentCard.acceptable.some(a => a.toLowerCase() === userVal);
+            const isCorrect = currentCard.acceptable.some(a => normalize(a) === userVal);
             
             isProcessing = true;
 
