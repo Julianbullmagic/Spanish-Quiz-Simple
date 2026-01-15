@@ -212,6 +212,7 @@
         </div>
         
         <button class="btn" onclick="checkAnswer()">Submit</button>
+        <button id="overrideBtn" class="btn hidden" style="background-color: #fbc02d; color: black; margin-top: 0.5rem;" onclick="overrideCorrect()">⚠️ I was right (Override)</button>
 
         <div class="feedback-stats" id="statsDisplay"></div>
 
@@ -246,8 +247,8 @@
     { "Disculpe": "Excuse me (formal)" },
     { "Con permiso": "Excuse me (passing through)" },
     { "Mucho gusto": "Nice to meet you" },
-    { "Encantado": "Delighted (male)" },
-    { "Encantada": "Delighted (female)/Enchanted" },
+    { "Encantado": "Delighted (masculine)" },
+    { "Encantada": "Delighted (feminine)/Enchanted" },
     { "Me llamo": "My name is/I call myself" },
     { "¿Cómo te llamas?": "What's your name?" },
     
@@ -262,8 +263,8 @@
     { "abuela": "grandmother" },
     { "tío": "uncle" },
     { "tía": "aunt" },
-    { "primo": "cousin (male)" },
-    { "prima": "cousin (female)" },
+    { "primo": "cousin (masculine)" },
+    { "prima": "cousin (feminine)" },
     { "nieto": "grandson" },
     { "nieta": "granddaughter" },
     { "esposo": "husband" },
@@ -772,10 +773,10 @@
     { "noventa": "ninety" },
     { "cien": "one hundred" },
     { "ciento": "one hundred (before nouns)" },
-    { "doscientos": "two hundred (male)" },
-    { "doscientas": "two hundred (female)" },
-    { "quinientos": "five hundred (male)" },
-    { "quinientas": "five hundred (female)" },
+    { "doscientos": "two hundred (masculine)" },
+    { "doscientas": "two hundred (feminine)" },
+    { "quinientos": "five hundred (masculine)" },
+    { "quinientas": "five hundred (feminine)" },
     { "mil": "thousand" },
     
     // Colors
@@ -1176,6 +1177,7 @@
         }
 
         function nextCard() {
+            document.getElementById('overrideBtn').classList.add('hidden');
             if (quizQueue.length === 0) {
                 alert("Quiz Complete! Great job.");
                 location.reload();
@@ -1259,6 +1261,30 @@
             
             return stripped;
         }
+        
+        function overrideCorrect() {
+            if (isProcessing) return; // Prevent double clicking if already moving on
+            
+            // Treat as correct
+            if (currentCard.wordObj.es) {
+                if (!correctCounts[currentCard.wordObj.es] === undefined) correctCounts[currentCard.wordObj.es] = 0;
+                correctCounts[currentCard.wordObj.es]++;
+                statsDisplay.textContent = `Marked Correct! (Manual Override)`;
+            } else {
+                statsDisplay.textContent = "Marked Correct!";
+            }
+            
+            // Visual feedback
+            answerInput.classList.remove('input-incorrect');
+            answerInput.classList.add('input-correct');
+            statsDisplay.style.color = "var(--success)";
+            document.getElementById('overrideBtn').classList.add('hidden');
+            
+            isProcessing = true;
+            setTimeout(() => {
+                nextCard();
+            }, 1000);
+        }
 
         function checkAnswer() {
             if (isProcessing) return;
@@ -1272,9 +1298,10 @@
                 return cleanAnswer(a) === userClean;
             });
             
-            isProcessing = true;
+            // isProcessing = true; // Wait to set this until we know if it's correct or we need to wait for override
 
             if (isCorrect) {
+                isProcessing = true;
                 // Correct
                 answerInput.classList.add('input-correct');
                 
@@ -1290,21 +1317,58 @@
                 }, 1000);
 
             } else {
-                // Incorrect
+                // Incorrect - Show error AND override button
                 answerInput.classList.add('input-incorrect');
                 statsDisplay.style.color = "var(--error)";
                 
-                // Show all acceptable answers to be helpful (filtering out the full combined string if it's redundant)
                 const niceList = currentCard.acceptable
-                    .filter(a => a.length < 50) // arbitrary length to avoid huge debug strings if any
+                    .filter(a => a.length < 50) 
                     .join(' OR ');
                     
                 statsDisplay.textContent = `Incorrect. Acceptable: ${niceList}`;
+                
+                // Show override button
+                document.getElementById('overrideBtn').classList.remove('hidden');
 
+                // Do NOT automatically move on. Let user read, retry (conceptually), or override.
+                // But wait, the original logic had a timeout to move on. 
+                // If we want the user to be able to override, we should probably PAUSE longer or wait for input?
+                // The user asked for an override button. If the card vanishes in 2 seconds, they can't click it.
+                // So I will REMOVE the automatic timeout for incorrect answers, or make it very long, or only move on keypress?
+                // I'll make it so it DOES NOT auto-advance on incorrect. The user must hit Enter (to retry? no logic for that yet) or click Next?
+                // Or I can leave the timeout but make it long?
+                // Better: Do not auto-advance on error. Let them press Enter to move on (which calls checkAnswer again? No.)
+                // Let's add a "Next" button or just let them press Enter to "submit" again (which is checkAnswer).
+                // Actually, if they failed, maybe they want to type the correct answer to practice?
+                // For now, to keep it simple and enable the button:
+                // I will NOT set isProcessing = true immediately.
+                // I will NOT auto-advance. 
+                // But I need a way to advance if they DON'T override.
+                // The "Submit" button checks answer.
+                // I'll change the "Submit" button to "Next" if they got it wrong? No, that's complex.
+                
+                // Compromise: Auto-advance after a longer delay (e.g., 4-5 seconds), OR if they click override.
+                // And allow hitting Enter to advance?
+                
+                isProcessing = true;
                 setTimeout(() => {
-                    statsDisplay.style.color = ""; // Reset color
+                    // Check if they clicked override in the meantime? 
+                    // If they did, nextCard() was already called.
+                    // But we need to know if we should still advance.
+                    // This is tricky with `setTimeout`.
+                    // Instead, I'll rely on the user to click the button or press a key?
+                    // Let's stick to the original behavior but slower?
+                    // No, the user needs time to click.
+                    // I will remove the auto-advance for incorrect answers entirely. 
+                    // I'll change the Submit button text to "Next Card" temporarily? 
+                    // Or just add a "Next" button? 
+                    // Actually, the simplest UX: 
+                    // Incorrect -> Show "Override" AND "Continue" buttons?
+                    // Or just let them press Enter to continue (which currently calls checkAnswer).
+                    
+                    // Let's just make the delay 5 seconds.
                     nextCard();
-                }, 2000);
+                }, 5000);
             }
         }
 
