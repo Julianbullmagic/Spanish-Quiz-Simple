@@ -264,6 +264,7 @@
         
         <button class="btn" onclick="checkAnswer()">Submit</button>
         <button id="overrideBtn" class="btn hidden" style="background-color: #fbc02d; color: black; margin-top: 0.5rem;" onclick="overrideCorrect()">⚠️ I was right (Override)</button>
+        <button id="reinforceBtn" class="btn hidden" style="background-color: #ff5722; color: white; margin-top: 0.5rem;" onclick="reinforceWord()">💪 Reinforce (Show More Often)</button>
 
         <div class="feedback-stats" id="statsDisplay"></div>
 
@@ -275,16 +276,29 @@
             📋 Copy AI Practice Prompt
         </button>
 
-        <div class="mode-controls">
-            <button class="btn btn-outline" style="margin:0; font-size: 0.8rem;" onclick="startQuiz('random')">🔀 Switch to Random Shuffle Mode</button>
-            <button class="btn btn-outline" style="margin:0; font-size: 0.8rem;" onclick="startQuiz('regular')">Qw Switch to Regular Learning Mode</button>
-        </div>
-    </div>
+                <div class="mode-controls">
 
-    <script>
-        // Placeholder list - REPLACE THIS with your full 1000 word list
-        const rawWordList = [
-            { "Hola": "Hello" },
+                    <button class="btn btn-outline" style="margin:0; font-size: 0.8rem;" onclick="prevCard()" id="backBtn">⬅️ Back</button>
+
+                    <button class="btn btn-outline" style="margin:0; font-size: 0.8rem;" onclick="startQuiz('random')">🔀 Switch to Random Shuffle Mode</button>
+
+                    <button class="btn btn-outline" style="margin:0; font-size: 0.8rem;" onclick="startQuiz('regular')">Qw Switch to Regular Learning Mode</button>
+
+                </div>
+
+            </div>
+
+        
+
+            <script>
+
+                // Placeholder list - REPLACE THIS with your full 1000 word list
+
+                const rawWordList = [
+
+                    { "Hola": "Hello" },
+
+        
             { "Buenos días": "Good morning" },
             { "Buenas tardes": "Good afternoon" },
             { "Buenas noches": "Good evening/Good night" },
@@ -1044,6 +1058,7 @@
 
         // State
         let quizQueue = [];
+        let historyStack = []; // Stores past cards to go back
         let currentCard = null;
         let correctCounts = {};
         let totalItems = 0;
@@ -1064,6 +1079,7 @@
         const statsDisplay = document.getElementById('statsDisplay');
         const progressBar = document.getElementById('progressBar');
         const langIndicator = document.getElementById('langIndicator');
+        const backBtn = document.getElementById('backBtn');
 
         // Logic
         function insertChar(char) {
@@ -1077,6 +1093,10 @@
         }
 
         function startQuiz(mode = 'regular') {
+            // Reset history
+            historyStack = [];
+            if (backBtn) backBtn.disabled = true;
+
             // Build Synonym Map (English -> All valid Spanish words)
             synonymMap = {};
             fullWordList.forEach(item => {
@@ -1248,19 +1268,74 @@
             return Array.from(answers);
         }
 
-        function nextCard() {
-            document.getElementById('overrideBtn').classList.add('hidden');
-            if (quizQueue.length === 0) {
-                alert("Quiz Complete! Great job.");
-                location.reload();
-                return;
+        function prevCard() {
+            if (historyStack.length === 0) return;
+
+            // Push the current card back onto the FRONT of the queue (so it's next again)
+            // Wait, if we go back, we want the current card to be "future" again?
+            // Yes, if I am on Card B (after A), and I click Back, I go to A. Card B should be next.
+            // So we push currentCard back to queue.
+            
+            // Note: currentCard stores the *processed* state (including mode). 
+            // The queue stores raw objects. We should push currentCard.wordObj back.
+            if (currentCard && currentCard.wordObj) {
+                quizQueue.push(currentCard.wordObj);
+                itemsDone--; // Revert progress count
             }
 
-            isProcessing = false;
-            const wordObj = quizQueue.pop();
-            itemsDone++;
+            const previousWordObj = historyStack.pop();
+            
+            // Update UI state
+            if (historyStack.length === 0 && backBtn) backBtn.disabled = true;
+            
+            // Re-render this card immediately (bypass nextCard's queue popping)
+            loadCard(previousWordObj);
+            
+            // Since we went back, we are re-doing an item.
+            // itemsDone was decremented above for the *current* card being cancelled.
+            // itemsDone for the *previous* card (which we are now viewing) was already counted when we saw it first?
+            // Actually, simplest is: itemsDone tracks how many we COMPLETED. 
+            // If we go back to view A, we haven't "completed" A again yet. 
+            // So itemsDone should probably decrement.
+            itemsDone--; 
+            updateProgress();
+        }
+
+        function reinforceWord() {
+            if (!currentCard || !currentCard.wordObj) return;
+
+            // Add 3 copies of the current word into the remaining queue
+            const copies = 3;
+            for (let i = 0; i < copies; i++) {
+                // Random position in the queue
+                const pos = Math.floor(Math.random() * quizQueue.length);
+                quizQueue.splice(pos, 0, currentCard.wordObj);
+            }
+
+            totalItems += copies; // Update total to reflect new length
             updateProgress();
 
+            // Feedback
+            const btn = document.getElementById('reinforceBtn');
+            btn.textContent = "✅ Reinforced! (Added 3x)";
+            btn.disabled = true;
+            
+            // Cancel the auto-advance timeout if user interacts
+            // (Note: We can't easily cancel the anonymous setTimeout from checkAnswer without storing the ID. 
+            // We will just let it happen, or better, we should store the timer ID.)
+        }
+
+        let autoAdvanceTimer = null;
+
+        function loadCard(wordObj) {
+            isProcessing = false;
+            document.getElementById('overrideBtn').classList.add('hidden');
+            document.getElementById('reinforceBtn').classList.add('hidden');
+            // Reset reinforce button state
+            const rBtn = document.getElementById('reinforceBtn');
+            rBtn.textContent = "💪 Reinforce (Show More Often)";
+            rBtn.disabled = false;
+            
             if (wordObj.type === 'grammar') {
                 currentCard = {
                     wordObj: wordObj,
@@ -1272,7 +1347,8 @@
                 questionWordEl.textContent = currentCard.question;
                 langIndicator.textContent = `Grammar: ${wordObj.topic}`;
             } else {
-                const mode = Math.random() < 0.5 ? 'toEN' : 'toES';
+                // Fallback if we only have wordObj:
+                const mode = (wordObj._savedMode) ? wordObj._savedMode : (Math.random() < 0.5 ? 'toEN' : 'toES');
                 const rawAnswer = mode === 'toEN' ? wordObj.en : wordObj.es;
                 
                 currentCard = {
@@ -1283,9 +1359,8 @@
                     acceptable: parseAnswers(rawAnswer)
                 };
 
-                // SMART SYNONYMS: If asking in English, accept ANY valid Spanish translation from our list
+                // SMART SYNONYMS
                 if (mode === 'toES') {
-                     // The question is English. Parse it to find lookup keys.
                      const enQuestions = parseAnswers(wordObj.en);
                      enQuestions.forEach(q => {
                          const key = q.toLowerCase().trim();
@@ -1305,6 +1380,38 @@
             answerInput.className = "";
             answerInput.focus();
             statsDisplay.textContent = "";
+        }
+
+        function nextCard() {
+            // Clear any pending timer
+            if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
+            
+            document.getElementById('overrideBtn').classList.add('hidden');
+            document.getElementById('reinforceBtn').classList.add('hidden');
+            
+            // 1. Save current card to history before moving on
+            if (currentCard) {
+                // We verify it's not null (start of game)
+                // We attach the mode used so we can restore it exactly
+                const historyItem = currentCard.wordObj;
+                historyItem._savedMode = currentCard.mode;
+                historyStack.push(historyItem);
+                
+                if (backBtn) backBtn.disabled = false;
+            }
+
+            if (quizQueue.length === 0) {
+                alert("Quiz Complete! Great job.");
+                location.reload();
+                return;
+            }
+
+            isProcessing = false;
+            const wordObj = quizQueue.pop();
+            itemsDone++;
+            updateProgress();
+            
+            loadCard(wordObj);
         }
 
         function cleanAnswer(text) {
@@ -1355,15 +1462,17 @@
             answerInput.classList.add('input-correct');
             statsDisplay.style.color = "var(--success)";
             document.getElementById('overrideBtn').classList.add('hidden');
+            document.getElementById('reinforceBtn').classList.add('hidden');
             
             isProcessing = true;
-            setTimeout(() => {
+            autoAdvanceTimer = setTimeout(() => {
                 nextCard();
             }, 1000);
         }
 
         function checkAnswer() {
             if (isProcessing) return;
+            if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
 
             const userRaw = answerInput.value;
             const userClean = cleanAnswer(userRaw);
@@ -1389,7 +1498,7 @@
                     statsDisplay.textContent = "Correct!";
                 }
 
-                setTimeout(() => {
+                autoAdvanceTimer = setTimeout(() => {
                     nextCard();
                 }, 1000);
 
@@ -1406,44 +1515,17 @@
                 
                 // Show override button
                 document.getElementById('overrideBtn').classList.remove('hidden');
+                // Show reinforce button
+                document.getElementById('reinforceBtn').classList.remove('hidden');
 
-                // Do NOT automatically move on. Let user read, retry (conceptually), or override.
-                // But wait, the original logic had a timeout to move on. 
-                // If we want the user to be able to override, we should probably PAUSE longer or wait for input?
-                // The user asked for an override button. If the card vanishes in 2 seconds, they can't click it.
-                // So I will REMOVE the automatic timeout for incorrect answers, or make it very long, or only move on keypress?
-                // I'll make it so it DOES NOT auto-advance on incorrect. The user must hit Enter (to retry? no logic for that yet) or click Next?
-                // Or I can leave the timeout but make it long?
-                // Better: Do not auto-advance on error. Let them press Enter to move on (which calls checkAnswer again? No.)
-                // Let's add a "Next" button or just let them press Enter to "submit" again (which is checkAnswer).
-                // Actually, if they failed, maybe they want to type the correct answer to practice?
-                // For now, to keep it simple and enable the button:
-                // I will NOT set isProcessing = true immediately.
-                // I will NOT auto-advance. 
-                // But I need a way to advance if they DON'T override.
-                // The "Submit" button checks answer.
-                // I'll change the "Submit" button to "Next" if they got it wrong? No, that's complex.
-                
-                // Compromise: Auto-advance after a longer delay (e.g., 4-5 seconds), OR if they click override.
-                // And allow hitting Enter to advance?
+                // Auto-advance delay logic
+                // If the user does nothing, we move on.
+                // If they click Reinforce, we want to give them feedback and NOT necessarily extend the time massively, 
+                // OR we just rely on them moving on?
+                // The previous logic was 5 seconds.
                 
                 isProcessing = true;
-                setTimeout(() => {
-                    // Check if they clicked override in the meantime? 
-                    // If they did, nextCard() was already called.
-                    // But we need to know if we should still advance.
-                    // This is tricky with `setTimeout`.
-                    // Instead, I'll rely on the user to click the button or press a key?
-                    // Let's stick to the original behavior but slower?
-                    // No, the user needs time to click.
-                    // I will remove the auto-advance for incorrect answers entirely. 
-                    // I'll change the Submit button text to "Next Card" temporarily? 
-                    // Or just add a "Next" button? 
-                    // Actually, the simplest UX: 
-                    // Incorrect -> Show "Override" AND "Continue" buttons?
-                    // Or just let them press Enter to continue (which currently calls checkAnswer).
-                    
-                    // Let's just make the delay 5 seconds.
+                autoAdvanceTimer = setTimeout(() => {
                     nextCard();
                 }, 5000);
             }
