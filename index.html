@@ -185,6 +185,45 @@
             from { transform: translateY(20px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
+
+        /* Accent Buttons */
+        .accent-row {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            margin-top: 8px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .accent-btn {
+            background: #e0e0e0;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            color: #333;
+            transition: background 0.2s;
+            font-family: inherit;
+        }
+        
+        .accent-btn:hover {
+            background: #d0d0d0;
+        }
+        
+        .accent-btn:active {
+            transform: scale(0.95);
+        }
+
+        .mode-controls {
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+            flex-direction: column;
+        }
     </style>
 </head>
 <body>
@@ -210,6 +249,17 @@
         
         <div class="input-group">
             <input type="text" id="answerInput" placeholder="Type translation..." autocomplete="off">
+            <div class="accent-row">
+                <button class="accent-btn" onclick="insertChar('á')">á</button>
+                <button class="accent-btn" onclick="insertChar('é')">é</button>
+                <button class="accent-btn" onclick="insertChar('í')">í</button>
+                <button class="accent-btn" onclick="insertChar('ó')">ó</button>
+                <button class="accent-btn" onclick="insertChar('ú')">ú</button>
+                <button class="accent-btn" onclick="insertChar('ü')">ü</button>
+                <button class="accent-btn" onclick="insertChar('ñ')">ñ</button>
+                <button class="accent-btn" onclick="insertChar('¿')">¿</button>
+                <button class="accent-btn" onclick="insertChar('¡')">¡</button>
+            </div>
         </div>
         
         <button class="btn" onclick="checkAnswer()">Submit</button>
@@ -224,683 +274,686 @@
         <button class="btn btn-outline" onclick="copyAiPrompt()">
             📋 Copy AI Practice Prompt
         </button>
+
+        <div class="mode-controls">
+            <button class="btn btn-outline" style="margin:0; font-size: 0.8rem;" onclick="startQuiz('random')">🔀 Switch to Random Shuffle Mode</button>
+            <button class="btn btn-outline" style="margin:0; font-size: 0.8rem;" onclick="startQuiz('regular')">Qw Switch to Regular Learning Mode</button>
+        </div>
     </div>
 
     <script>
         // Placeholder list - REPLACE THIS with your full 1000 word list
         const rawWordList = [
-               { "Hola": "Hello" },
-    { "Buenos días": "Good morning" },
-    { "Buenas tardes": "Good afternoon" },
-    { "Buenas noches": "Good evening/Good night" },
-    { "¿Cómo estás?": "How are you?" },
-    { "Bien": "Good/Well" },
-    { "Muy bien": "Very good/Very well" },
-    { "¿Y tú?": "And you?" },
-    { "Adiós": "Goodbye" },
-    { "Hasta luego": "See you later" },
-    { "Gracias": "Thank you" },
-    { "Muchas gracias": "Thank you very much" },
-    { "De nada": "You're welcome" },
-    { "Por favor": "Please" },
-    { "Lo siento": "I'm sorry" },
-    { "Perdón": "Excuse me/Sorry" },
-    { "Disculpe": "Excuse me (formal)" },
-    { "Con permiso": "Excuse me (passing through)" },
-    { "Mucho gusto": "Nice to meet you" },
-    { "Encantado": "Delighted (masculine)" },
-    { "Encantada": "Delighted (feminine)/Enchanted" },
-    { "Me llamo": "My name is/I call myself" },
-    { "¿Cómo te llamas?": "What's your name?" },
+            { "Hola": "Hello" },
+            { "Buenos días": "Good morning" },
+            { "Buenas tardes": "Good afternoon" },
+            { "Buenas noches": "Good evening/Good night" },
+            { "¿Cómo estás?": "How are you?" },
+            { "Bien": "Good/Well" },
+            { "Muy bien": "Very good/Very well" },
+            { "¿Y tú?": "And you?" },
+            { "Adiós": "Goodbye" },
+            { "Hasta luego": "See you later" },
+            { "Gracias": "Thank you" },
+            { "Muchas gracias": "Thank you very much" },
+            { "De nada": "You're welcome" },
+            { "Por favor": "Please" },
+            { "Lo siento": "I'm sorry" },
+            { "Perdón": "Excuse me/Sorry" },
+            { "Disculpe": "Excuse me (formal)" },
+            { "Con permiso": "Excuse me (passing through)" },
+            { "Mucho gusto": "Nice to meet you" },
+            { "Encantado": "Delighted (masculine)" },
+            { "Encantada": "Delighted (feminine)/Enchanted" },
+            { "Me llamo": "My name is/I call myself" },
+            { "¿Cómo te llamas?": "What's your name?" },
     
-    // People & Family
-    { "Familia": "Family" },
-    { "padres": "parents" },
-    { "madre": "mother" },
-    { "padre": "father" },
-    { "hermano": "brother" },
-    { "hermana": "sister" },
-    { "abuelo": "grandfather" },
-    { "abuela": "grandmother" },
-    { "tío": "uncle" },
-    { "tía": "aunt" },
-    { "primo": "cousin (masculine)" },
-    { "prima": "cousin (feminine)" },
-    { "niece": "sobrina" },
-    { "nephew": "sobrino" },
-    { "nieto": "grandson" },
-    { "nieta": "granddaughter" },
-    { "esposo": "husband" },
-    { "esposa": "wife" },
-    { "hijo": "son" },
-    { "hija": "daughter" },
-    { "bisabuelo": "great-grandfather" },
-    { "bisabuela": "great-grandmother" },
-    { "bisnieto": "great-grandson" },
-    { "bisnieta": "great-granddaughter" },
-    { "parientes": "relatives" },
-    { "relativos": "relatives" },
-    
-    // Food & Drink - Fruits
-    { "Manzana": "apple" },
-    { "pera": "pear" },
-    { "plátano": "banana" },
-    { "melón": "melon" },
-    { "sandía": "watermelon" },
-    { "uva": "grape" },
-    { "durazno": "peach" },
-    { "melocotón": "peach" },
-    { "albaricoque": "apricot" },
-    { "mango": "mango" },
-    { "piña": "pineapple" },
-    { "fresa": "strawberry" },
-    { "cereza": "cherry" },
-    { "naranja": "orange" },
-    { "clementina": "clementine" },
-    { "higo": "fig" },
-    { "mora": "blackberry" },
-    { "arándano": "blueberry/cranberry" },
-    { "frambuesa": "raspberry" },
-    { "ciruela": "plum" },
-    { "granada": "pomegranate" },
-    { "lima": "lime" },
-    { "limón": "lemon" },
-    
-    // Vegetables
-    { "Lechuga": "lettuce" },
-    { "tomate": "tomato" },
-    { "papa": "potato" },
-    { "patata": "potato" },
-    { "batata": "sweet potato" },
-    { "coliflor": "cauliflower" },
-    { "repollo": "cabbage" },
-    { "brócoli": "broccoli" },
-    { "zanahoria": "carrot" },
-    { "berenjena": "eggplant" },
-    { "calabaza": "pumpkin" },
-    { "calabacín": "zucchini" },
-    { "pepino": "cucumber" },
-    { "okra": "okra" },
-    { "quiabo": "okra" },
-    { "ajo": "garlic" },
-    { "cebolla": "onion" },
-    { "pimiento": "bell pepper" },
-    { "champiñón": "mushroom" },
-    { "seta": "mushroom" },
-    { "espinaca": "spinach" },
-    { "judías verdes": "green beans" },
-    { "frijoles": "beans" },
-    { "habichuelas": "beans" },
-    { "guisantes": "peas" },
-    { "arvejas": "peas" },
-    { "espárragos": "asparagus" },
-    
-    // Other Foods
-    { "Pan": "bread" },
-    { "arroz": "rice" },
-    { "huevo": "egg" },
-    { "carne": "meat" },
-    { "cerdo": "pork" },
-    { "pollo": "chicken" },
-    { "res": "beef" },
-    { "vaca": "beef/cow" },
-    { "pescado": "fish" },
-    { "pasta": "pasta" },
-    { "miel": "honey" },
-    { "azúcar": "sugar" },
-    
-    // Drinks
-    { "Agua": "water" },
-    { "café": "coffee" },
-    { "té": "tea" },
-    { "cerveza": "beer" },
-    { "leche": "milk" },
-    
-    // Dining
-    { "Desayuno": "breakfast" },
-    { "almuerzo": "lunch" },
-    { "cena": "dinner" },
-    { "horno": "oven" },
-    { "estufa": "stove" },
-    { "microondas": "microwave" },
-    { "basura": "trash" },
-    { "sartén": "pan" },
-    { "plato": "plate" },
-    { "tenedor": "fork" },
-    { "cuchillo": "knife" },
-    { "cuchara": "spoon" },
-    { "vaso": "glass" },
-    { "taza": "cup" },
-    { "sal": "salt" },
-    { "dulce": "sweet" },
-    { "picante": "spicy" },
-    { "agrio": "sour" },
-    { "amargo": "bitter" },
-    
-    // Home & Objects - Rooms
-    { "Casa": "house" },
-    { "cocina": "kitchen" },
-    { "salón": "living room" },
-    { "comedor": "dining room" },
-    { "dormitorio": "bedroom" },
-    { "habitación": "room" },
-    { "cuarto": "room" },
-    { "baño": "bathroom" },
-    { "sótano": "basement" },
-    
-    // Furniture & Fixtures
-    { "Escaleras": "stairs" },
-    { "puerta": "door" },
-    { "ventana": "window" },
-    { "techo": "ceiling" },
-    { "lámpara": "lamp" },
-    { "reloj": "clock/watch" },
-    { "televisión": "television" },
-    { "cama": "bed" },
-    { "armario": "wardrobe/closet" },
-    { "refrigerador": "refrigerator" },
-    { "frigorífico": "refrigerator" },
-    { "fregadero": "kitchen sink" },
-    { "lavamanos": "bathroom sink" },
-    { "espejo": "mirror" },
-    { "ducha": "shower" },
-    { "inodoro": "toilet" },
-    { "bañera": "bathtub" },
-    
-    // Bathroom Items
-    { "Cepillo": "brush" },
-    { "cepillo de dientes": "toothbrush" },
-    { "secador": "hair dryer" },
-    { "jabón": "soap" },
-    { "champú": "shampoo" },
-    { "acondicionador": "conditioner" },
-    { "crema dental": "toothpaste" },
-    { "esponja": "sponge" },
-    { "papel higiénico": "toilet paper" },
-    { "toalla": "towel" },
-    
-    // Cleaning
-    { "Limpiar": "to clean" },
-    { "lavar": "to wash" },
-    { "barrer": "to sweep" },
-    
-    // Places & Directions
-    { "Lugar": "place" },
-    { "tienda": "store" },
-    { "escuela": "school" },
-    { "biblioteca": "library" },
-    { "supermercado": "supermarket" },
-    { "edificio": "building" },
-    { "oficina": "office" },
-    { "estación de tren": "train station" },
-    { "estación de autobús": "bus station" },
-    { "playa": "beach" },
-    { "restaurante": "restaurant" },
-    { "parque": "park" },
-    { "iglesia": "church" },
-    { "cine": "cinema/movie theater" },
-    { "correo": "post office" },
-    { "calle": "street" },
-    { "esquina": "corner" },
-    { "centro comercial": "shopping mall" },
-    { "estadio": "stadium" },
-    { "gimnasio": "gym" },
-    { "piscina": "pool" },
-    
-    // Prepositions
-    { "Al lado de": "next to/beside" },
-    { "detrás de": "behind" },
-    { "a la izquierda de": "to the left of" },
-    { "a la derecha de": "to the right of" },
-    { "entre": "between" },
-    { "enfrente": "in front of/opposite" },
-    { "delante de": "in front of" },
-    
-    // Directions
-    { "Girar": "to turn" },
-    { "cruzar": "to cross" },
-    { "seguir derecho": "to go straight" },
-    { "primero": "first" },
-    { "luego": "then/later" },
-    
-    // Clothing
-    { "Vestido": "dress" },
-    { "camisa": "shirt" },
-    { "camiseta": "t-shirt" },
-    { "pantalones": "pants" },
-    { "pantalones cortos": "shorts" },
-    { "ropa interior": "underwear" },
-    { "blusa": "blouse" },
-    { "falda": "skirt" },
-    { "traje": "suit" },
-    { "traje de baño": "swimsuit" },
-    { "calcetín": "sock" },
-    { "suéter": "sweater" },
-    { "corbata": "tie" },
-    { "zapatos": "shoes" },
-    { "botas": "boots" },
-    { "zapatillas": "sneakers" },
-    { "sombrero": "hat" },
-    { "bolso": "purse/handbag" },
-    { "cinturón": "belt" },
-    { "abrigo": "coat" },
-    { "pijama": "pajamas" },
-    
-    // Weather
-    { "Hace calor": "It's hot" },
-    { "Hace frío": "It's cold" },
-    { "Hace buen tiempo": "The weather is good" },
-    { "Hace mal tiempo": "The weather is bad" },
-    { "Hace sol": "It's sunny" },
-    { "nublado": "cloudy" },
-    { "soleado": "sunny" },
-    { "hay viento": "it's windy" },
-    { "nieve": "snow" },
-    { "lluvia": "rain" },
-    { "tormenta": "storm" },
-    { "nube": "cloud" },
-    { "trueno": "thunder" },
-    { "relámpago": "lightning" },
-    { "Está nevando": "It's snowing" },
-    { "Está lluvioso": "It's rainy" },
-    { "Está tormentoso": "It's stormy" },
-    
-    // Seasons
-    { "Primavera": "spring" },
-    { "verano": "summer" },
-    { "otoño": "autumn/fall" },
-    { "invierno": "winter" },
-    
-    // Celestial
-    { "Sol": "sun" },
-    { "luna": "moon" },
-    
-    // Animals
-    { "Gato": "cat" },
-    { "perro": "dog" },
-    { "pájaro": "bird" },
-    { "elefante": "elephant" },
-    { "león": "lion" },
-    { "oso": "bear" },
-    { "caballo": "horse" },
-    { "tigre": "tiger" },
-    { "toro": "bull" },
-    { "tortuga": "turtle" },
-    { "cerdo": "pig" },
-    { "vaca": "cow" },
-    { "oveja": "sheep" },
-    { "pato": "duck" },
-    
-    // Body Parts
-    { "Cabeza": "head" },
-    { "cara": "face" },
-    { "ojos": "eyes" },
-    { "orejas": "ears" },
-    { "pecho": "chest" },
-    { "brazos": "arms" },
-    { "piernas": "legs" },
-    { "pies": "feet" },
-    { "manos": "hands" },
-    { "dedos": "fingers" },
-    { "dedos de pies": "toes" },
-    { "espalda": "back" },
-    { "rodilla": "knee" },
-    { "codo": "elbow" },
-    { "hombro": "shoulder" },
-    { "tobillo": "ankle" },
-    { "dientes": "teeth" },
-    { "estómago": "stomach" },
-    { "cadera": "hip" },
-    { "pelo": "hair" },
-    { "cabello": "hair" },
-    { "muñeca": "wrist" },
-    
-    // Physical Descriptions
-    { "Alto": "tall (male)" },
-    { "alta": "tall (female)" },
-    { "bajo": "short (male)" },
-    { "baja": "short (female)" },
-    { "delgado": "thin/slim (male)" },
-    { "delgada": "thin/slim (female)" },
-    { "gordo": "fat (male)" },
-    { "gorda": "fat (female)" },
-    { "guapo": "handsome/good-looking (male)" },
-    { "guapa": "beautiful/good-looking (female)" },
-    { "hermoso": "beautiful/handsome (male)" },
-    { "hermosa": "beautiful (female)" },
-    { "feo": "ugly (male)" },
-    { "fea": "ugly (female)" },
-    { "fuerte": "strong" },
-    { "musculoso": "muscular (male)" },
-    { "musculosa": "muscular (female)" },
-    { "moreno": "dark-haired/dark-skinned (male)" },
-    { "morena": "dark-haired/dark-skinned (female)" },
-    { "rubio": "blonde (male)" },
-    { "rubia": "blonde (female)" },
-    { "pelirrojo": "red-haired (male)" },
-    { "pelirroja": "red-haired (female)" },
-    { "canoso": "gray-haired" },
-    { "joven": "young" },
-    { "viejo": "old (male)" },
-    { "vieja": "old (female)" },
-    { "mayor": "older" },
-    { "pálido": "pale (male)" },
-    { "pálida": "pale (female)" },
-    
-    // Personality
-    { "Amable": "kind" },
-    { "valiente": "brave" },
-    { "sensible": "sensitive" },
-    { "horrible": "horrible" },
-    { "ambicioso": "ambitious (male)" },
-    { "ambiciosa": "ambitious (female)" },
-    { "apasionado": "passionate (male)" },
-    { "apasionada": "passionate (female)" },
-    { "cuidadoso": "careful (male)" },
-    { "cuidadosa": "careful (female)" },
-    { "cínico": "cynical (male)" },
-    { "cínica": "cynical (female)" },
-    { "dependiente": "dependent" },
-    { "independiente": "independent" },
-    { "divertido": "fun (male)" },
-    { "divertida": "fun (female)" },
-    { "gracioso": "funny (male)" },
-    { "graciosa": "funny (female)" },
-    { "dulce": "sweet" },
-    { "educado": "polite (male)" },
-    { "educada": "polite (female)" },
-    { "inteligente": "intelligent" },
-    { "generoso": "generous (male)" },
-    { "generosa": "generous (female)" },
-    { "paciente": "patient" },
-    { "impaciente": "impatient" },
-    { "impulsivo": "impulsive (male)" },
-    { "impulsiva": "impulsive (female)" },
-    { "interesante": "interesting" },
-    { "malo": "bad (male)" },
-    { "mala": "bad (female)" },
-    { "mentiroso": "liar (male)" },
-    { "mentirosa": "liar (female)" },
-    { "perezoso": "lazy (male)" },
-    { "perezosa": "lazy (female)" },
-    { "poderoso": "powerful (male)" },
-    { "poderosa": "powerful (female)" },
-    { "positivo": "positive (male)" },
-    { "positiva": "positive (female)" },
-    { "reservado": "reserved (male)" },
-    { "reservada": "reserved (female)" },
-    { "serio": "serious (male)" },
-    { "seria": "serious (female)" },
-    { "simpático": "nice/pleasant (male)" },
-    { "simpática": "nice/pleasant (female)" },
-    { "talentoso": "talented (male)" },
-    { "talentosa": "talented (female)" },
-    
-    // Emotions
-    { "Feliz": "happy" },
-    { "triste": "sad" },
-    { "emocionado": "excited (male)" },
-    { "emocionada": "excited (female)" },
-    { "cansado": "tired (male)" },
-    { "cansada": "tired (female)" },
-    { "enfadado": "angry (male)" },
-    { "enfadada": "angry (female)" },
-    { "enojado": "angry (male)" },
-    { "enojada": "angry (female)" },
-    { "preocupado": "worried (male)" },
-    { "preocupada": "worried (female)" },
-    { "aburrido": "bored (male)" },
-    { "aburrida": "bored (female)" },
-    { "confundido": "confused (male)" },
-    { "confundida": "confused (female)" },
-    { "enamorado": "in love (male)" },
-    { "enamorada": "in love (female)" },
-    { "asustado": "scared (male)" },
-    { "asustada": "scared (female)" },
-    { "frustrado": "frustrated (male)" },
-    { "frustrada": "frustrated (female)" },
-    { "sorprendido": "surprised (male)" },
-    { "sorprendida": "surprised (female)" },
-    { "cómodo": "comfortable (male)" },
-    { "cómoda": "comfortable (female)" },
-    { "incómodo": "uncomfortable (male)" },
-    { "incómoda": "uncomfortable (female)" },
-    { "avergonzado": "embarrassed (male)" },
-    { "avergonzada": "embarrassed (female)" },
-    { "tímido": "shy (male)" },
-    { "tímida": "shy (female)" },
-    { "nervioso": "nervous (male)" },
-    { "nerviosa": "nervous (female)" },
-    { "ansioso": "anxious (male)" },
-    { "ansiosa": "anxious (female)" },
-    
-    // Sports
-    { "Béisbol": "baseball" },
-    { "fútbol": "soccer/football" },
-    { "baloncesto": "basketball" },
-    { "básquetbol": "basketball" },
-    { "golf": "golf" },
-    { "hockey": "hockey" },
-    { "tenis": "tennis" },
-    { "voleibol": "volleyball" },
-    { "equipo": "team" },
-    { "carrera": "race" },
-    { "pelota": "ball" },
-    { "raqueta": "racket" },
-    { "red": "net" },
-    
-    // Sports Verbs
-    { "jugar": "to play" },
-    { "practicar": "to practice" },
-    { "ganar": "to win" },
-    { "perder": "to lose" },
-    { "empatar": "to tie/draw" },
-    { "tirar": "to throw" },
-    { "patear": "to kick" },
-    { "esquiar": "to ski" },
-    
-    // Days of the Week
-    { "Lunes": "Monday" },
-    { "martes": "Tuesday" },
-    { "miércoles": "Wednesday" },
-    { "jueves": "Thursday" },
-    { "viernes": "Friday" },
-    { "sábado": "Saturday" },
-    { "domingo": "Sunday" },
-    
-    // Months
-    { "Enero": "January" },
-    { "febrero": "February" },
-    { "marzo": "March" },
-    { "abril": "April" },
-    { "mayo": "May" },
-    { "junio": "June" },
-    { "julio": "July" },
-    { "agosto": "August" },
-    { "septiembre": "September" },
-    { "octubre": "October" },
-    { "noviembre": "November" },
-    { "diciembre": "December" },
-    
-    // Time & Dates
-    { "Año": "year" },
-    { "mes": "month" },
-    { "semana": "week" },
-    { "día": "day" },
-    { "hora": "hour" },
-    { "ayer": "yesterday" },
-    { "hoy": "today" },
-    { "mañana": "tomorrow/morning" },
-    { "pasado mañana": "the day after tomorrow" },
-    { "tarde": "afternoon/evening/late" },
-    { "noche": "night" },
-    { "fin de semana": "weekend" },
-    
-    // Telling Time
-    { "Es la": "It's (for 1 o'clock)" },
-    { "Son las": "It's (for other hours)" },
-    { "y media": "half past" },
-    { "y cuarto": "quarter past" },
-    { "menos cuarto": "quarter to" },
-    
-    // Numbers 0-20
-    { "cero": "zero" },
-    { "uno": "one" },
-    { "dos": "two" },
-    { "tres": "three" },
-    { "cuatro": "four" },
-    { "cinco": "five" },
-    { "seis": "six" },
-    { "siete": "seven" },
-    { "ocho": "eight" },
-    { "nueve": "nine" },
-    { "diez": "ten" },
-    { "once": "eleven" },
-    { "doce": "twelve" },
-    { "trece": "thirteen" },
-    { "catorce": "fourteen" },
-    { "quince": "fifteen" },
-    { "dieciséis": "sixteen" },
-    { "diecisiete": "seventeen" },
-    { "dieciocho": "eighteen" },
-    { "diecinueve": "nineteen" },
-    { "veinte": "twenty" },
-    
-    // Tens and Hundreds
-    { "treinta": "thirty" },
-    { "cuarenta": "forty" },
-    { "cincuenta": "fifty" },
-    { "sesenta": "sixty" },
-    { "setenta": "seventy" },
-    { "ochenta": "eighty" },
-    { "noventa": "ninety" },
-    { "cien": "one hundred" },
-    { "ciento": "one hundred (before nouns)" },
-    { "doscientos": "two hundred (masculine)" },
-    { "doscientas": "two hundred (feminine)" },
-    { "quinientos": "five hundred (masculine)" },
-    { "quinientas": "five hundred (feminine)" },
-    { "mil": "thousand" },
-    
-    // Colors
-    { "Azul": "blue" },
-    { "rojo": "red" },
-    { "amarillo": "yellow" },
-    { "verde": "green" },
-    { "marrón": "brown" },
-    { "morado": "purple" },
-    { "rosa": "pink" },
-    { "negro": "black" },
-    { "blanco": "white" },
-    { "gris": "gray" },
-    { "naranja": "orange" },
-    
-    // Key Verbs
-    { "Ser": "to be (permanent)" },
-    { "estar": "to be (temporary/location)" },
-    { "tener": "to have" },
-    { "haber": "to have (auxiliary)/there is/are" },
-    { "ir": "to go" },
-    { "querer": "to want/to love" },
-    { "poder": "to be able to/can" },
-    { "hacer": "to do/to make" },
-    { "decir": "to say/to tell" },
-    { "dar": "to give" },
-    { "ver": "to see" },
-    { "saber": "to know (facts)" },
-    { "conocer": "to know (people/places)" },
-    { "poner": "to put" },
-    { "salir": "to go out/to leave" },
-    { "venir": "to come" },
-    { "traer": "to bring" },
-    { "pensar": "to think" },
-    { "sentir": "to feel/to regret" },
-    { "gustar": "to like" },
-    { "encantar": "to love (things)" },
-    { "necesitar": "to need" },
-    { "comprar": "to buy" },
-    { "costar": "to cost" },
-    { "probar": "to try/to taste" },
-    { "tocar": "to touch/to play (instrument)" },
-    { "cepillarse": "to brush (oneself)" },
-    { "ducharse": "to shower (oneself)" },
-    
-    // Question Words
-    { "Qué": "what" },
-    { "quién": "who" },
-    { "cuándo": "when" },
-    { "dónde": "where" },
-    { "por qué": "why" },
-    { "cómo": "how" },
-    { "cuánto": "how much (male)" },
-    { "cuánta": "how much (female)" },
-    { "cuántos": "how many (male)" },
-    { "cuántas": "how many (female)" },
-    
-    // Possessives
-    { "Mi": "my" },
-    { "tu": "your (informal)" },
-    { "su": "his/her/your (formal)/their" },
-    { "nuestro": "our (male)" },
-    { "nuestra": "our (female)" },
-    { "vuestro": "your (plural, Spain, male)" },
-    { "vuestra": "your (plural, Spain, female)" },
-    { "mío": "mine (male)" },
-    { "mía": "mine (female)" },
-    { "tuyo": "yours (informal, male)" },
-    { "tuya": "yours (informal, female)" },
-    { "suyo": "his/hers/yours (formal)/theirs (male)" },
-    { "suya": "his/hers/yours (formal)/theirs (female)" },
-    
-    // Demonstratives
-    { "Este": "this (male)" },
-    { "esta": "this (female)" },
-    { "eso": "that (neuter)" },
-    { "esa": "that (female)" },
-    { "aquel": "that (over there, male)" },
-    { "aquella": "that (over there, female)" },
-    
-    // Pronouns
-    { "Yo": "I" },
-    { "tú": "you (informal)" },
-    { "él": "he" },
-    { "ella": "she" },
-    { "usted": "you (formal)" },
-    { "nosotros": "we (male/mixed)" },
-    { "nosotras": "we (female)" },
-    { "vosotros": "you all (Spain, male/mixed)" },
-    { "vosotras": "you all (Spain, female)" },
-    { "ellos": "they (male/mixed)" },
-    { "ellas": "they (female)" },
-    { "ustedes": "you all (formal/Latin America)" },
-    
-    // Object Pronouns
-    { "Me": "me/to me" },
-    { "te": "you/to you (informal)" },
-    { "se": "himself/herself/yourself/themselves" },
-    { "nos": "us/to us" },
-    { "os": "you all/to you all (Spain)" },
-    { "lo": "him/it (male, direct object)" },
-    { "la": "her/it (female, direct object)" },
-    { "los": "them (male/mixed, direct object)" },
-    { "las": "them (female, direct object)" },
-    { "le": "to him/to her/to you (indirect object)" },
-    { "les": "to them/to you all (indirect object)" },
-    
-    // Miscellaneous
-    { "Ejercicio": "exercise" },
-    { "viaje": "trip" },
-    { "clima": "climate/weather" },
-    { "dirección": "address/direction" },
-    { "precio": "price" },
-    { "rebaja": "discount/sale" },
-    { "bolsa": "bag" },
-    { "pasillo": "aisle" },
-    { "caja": "cash register/box" },
-    { "carrito": "shopping cart" },
-    { "productos lácteos": "dairy products" },
-    { "cortesía": "courtesy" },
-    { "sueño": "sleep/dream" }
+            // People & Family
+            { "La familia": "Family" },
+            { "los padres": "parents" },
+            { "la madre": "mother" },
+            { "el padre": "father" },
+            { "el hermano": "brother" },
+            { "la hermana": "sister" },
+            { "el abuelo": "grandfather" },
+            { "la abuela": "grandmother" },
+            { "el tío": "uncle" },
+            { "la tía": "aunt" },
+            { "el primo": "cousin (masculine)" },
+            { "la prima": "cousin (feminine)" },
+            { "la sobrina": "niece" },
+            { "el sobrino": "nephew" },
+            { "el nieto": "grandson" },
+            { "la nieta": "granddaughter" },
+            { "el esposo": "husband" },
+            { "la esposa": "wife" },
+            { "el hijo": "son" },
+            { "la hija": "daughter" },
+            { "el bisabuelo": "great-grandfather" },
+            { "la bisabuela": "great-grandmother" },
+            { "el bisnieto": "great-grandson" },
+            { "la bisnieta": "great-granddaughter" },
+            { "los parientes": "relatives" },
+            
+            // Food & Drink - Fruits
+            { "La manzana": "apple" },
+            { "la pera": "pear" },
+            { "el plátano": "banana" },
+            { "el melón": "melon" },
+            { "la sandía": "watermelon" },
+            { "la uva": "grape" },
+            { "el durazno": "peach" },
+            { "el melocotón": "peach" },
+            { "el albaricoque": "apricot" },
+            { "el mango": "mango" },
+            { "la piña": "pineapple" },
+            { "la fresa": "strawberry" },
+            { "la cereza": "cherry" },
+            { "la naranja": "orange" },
+            { "la clementina": "clementine" },
+            { "el higo": "fig" },
+            { "la mora": "blackberry" },
+            { "el arándano": "blueberry/cranberry" },
+            { "la frambuesa": "raspberry" },
+            { "la ciruela": "plum" },
+            { "la granada": "pomegranate" },
+            { "la lima": "lime" },
+            { "el limón": "lemon" },
+            
+            // Vegetables
+            { "La lechuga": "lettuce" },
+            { "el tomate": "tomato" },
+            { "la papa": "potato" },
+            { "la patata": "potato" },
+            { "la batata": "sweet potato" },
+            { "la coliflor": "cauliflower" },
+            { "el repollo": "cabbage" },
+            { "el brócoli": "broccoli" },
+            { "la zanahoria": "carrot" },
+            { "la berenjena": "eggplant" },
+            { "la calabaza": "pumpkin" },
+            { "el calabacín": "zucchini" },
+            { "el pepino": "cucumber" },
+            { "la okra": "okra" },
+            { "el ajo": "garlic" },
+            { "la cebolla": "onion" },
+            { "el pimiento": "bell pepper" },
+            { "el champiñón": "mushroom" },
+            { "la seta": "mushroom" },
+            { "la espinaca": "spinach" },
+            { "las judías verdes": "green beans" },
+            { "los frijoles": "beans" },
+            { "los guisantes": "peas" },
+            { "los espárragos": "asparagus" },
+            
+            // Other Foods
+            { "El pan": "bread" },
+            { "el arroz": "rice" },
+            { "el huevo": "egg" },
+            { "la carne": "meat" },
+            { "el cerdo": "pork" },
+            { "el pollo": "chicken" },
+            { "la res": "beef" },
+            { "la vaca": "beef/cow" },
+            { "el pescado": "fish" },
+            { "la pasta": "pasta" },
+            { "la miel": "honey" },
+            { "el azúcar": "sugar" },
+            
+            // Drinks
+            { "El agua": "water" },
+            { "el café": "coffee" },
+            { "el té": "tea" },
+            { "la cerveza": "beer" },
+            { "la leche": "milk" },
+            
+            // Dining
+            { "El desayuno": "breakfast" },
+            { "el almuerzo": "lunch" },
+            { "la cena": "dinner" },
+            { "el horno": "oven" },
+            { "la estufa": "stove" },
+            { "el microondas": "microwave" },
+            { "la basura": "trash" },
+            { "la sartén": "pan" },
+            { "el plato": "plate" },
+            { "el tenedor": "fork" },
+            { "el cuchillo": "knife" },
+            { "la cuchara": "spoon" },
+            { "el vaso": "glass" },
+            { "la taza": "cup" },
+            { "la sal": "salt" },
+            
+            // Tastes (Adjectives - usually kept as is, but can be used as nouns in context. Keeping as adjectives here or generic)
+            { "dulce": "sweet" },
+            { "picante": "spicy" },
+            { "agrio": "sour" },
+            { "amargo": "bitter" },
+            
+            // Home & Objects - Rooms
+            { "La casa": "house" },
+            { "la cocina": "kitchen" },
+            { "el salón": "living room" },
+            { "el comedor": "dining room" },
+            { "el dormitorio": "bedroom" },
+            { "la habitación": "room" },
+            { "el cuarto": "room" },
+            { "el baño": "bathroom" },
+            { "el sótano": "basement" },
+            
+            // Furniture & Fixtures
+            { "Las escaleras": "stairs" },
+            { "la puerta": "door" },
+            { "la ventana": "window" },
+            { "el techo": "ceiling" },
+            { "la lámpara": "lamp" },
+            { "el reloj": "clock/watch" },
+            { "la televisión": "television" },
+            { "la cama": "bed" },
+            { "el armario": "wardrobe/closet" },
+            { "el refrigerador": "refrigerator" },
+            { "el frigorífico": "refrigerator" },
+            { "el fregadero": "kitchen sink" },
+            { "el lavamanos": "bathroom sink" },
+            { "el espejo": "mirror" },
+            { "la ducha": "shower" },
+            { "el inodoro": "toilet" },
+            { "la bañera": "bathtub" },
+            
+            // Bathroom Items
+            { "El cepillo": "brush" },
+            { "el cepillo de dientes": "toothbrush" },
+            { "el secador": "hair dryer" },
+            { "el jabón": "soap" },
+            { "el champú": "shampoo" },
+            { "el acondicionador": "conditioner" },
+            { "la crema dental": "toothpaste" },
+            { "la esponja": "sponge" },
+            { "el papel higiénico": "toilet paper" },
+            { "la toalla": "towel" },
+            
+            // Cleaning Verbs
+            { "Limpiar": "to clean" },
+            { "lavar": "to wash" },
+            { "barrer": "to sweep" },
+            
+            // Places & Directions
+            { "El lugar": "place" },
+            { "la tienda": "store" },
+            { "la escuela": "school" },
+            { "la biblioteca": "library" },
+            { "el supermercado": "supermarket" },
+            { "el edificio": "building" },
+            { "la oficina": "office" },
+            { "la estación de tren": "train station" },
+            { "la estación de autobús": "bus station" },
+            { "la playa": "beach" },
+            { "el restaurante": "restaurant" },
+            { "el parque": "park" },
+            { "la iglesia": "church" },
+            { "el cine": "cinema/movie theater" },
+            { "el correo": "post office" },
+            { "la calle": "street" },
+            { "la esquina": "corner" },
+            { "el centro comercial": "shopping mall" },
+            { "el estadio": "stadium" },
+            { "el gimnasio": "gym" },
+            { "la piscina": "pool" },
+            
+            // Prepositions
+            { "Al lado de": "next to/beside" },
+            { "detrás de": "behind" },
+            { "a la izquierda de": "to the left of" },
+            { "a la derecha de": "to the right of" },
+            { "entre": "between" },
+            { "enfrente": "in front of/opposite" },
+            { "delante de": "in front of" },
+            
+            // Directions
+            { "Girar": "to turn" },
+            { "cruzar": "to cross" },
+            { "seguir derecho": "to go straight" },
+            { "primero": "first" },
+            { "luego": "then/later" },
+            
+            // Clothing
+            { "El vestido": "dress" },
+            { "la camisa": "shirt" },
+            { "la camiseta": "t-shirt" },
+            { "los pantalones": "pants" },
+            { "los pantalones cortos": "shorts" },
+            { "la ropa interior": "underwear" },
+            { "la blusa": "blouse" },
+            { "la falda": "skirt" },
+            { "el traje": "suit" },
+            { "el traje de baño": "swimsuit" },
+            { "el calcetín": "sock" },
+            { "el suéter": "sweater" },
+            { "la corbata": "tie" },
+            { "los zapatos": "shoes" },
+            { "las botas": "boots" },
+            { "las zapatillas": "sneakers" },
+            { "el sombrero": "hat" },
+            { "el bolso": "purse/handbag" },
+            { "el cinturón": "belt" },
+            { "el abrigo": "coat" },
+            { "el pijama": "pajamas" },
+            
+            // Weather Expressions (Verbs/Adjectives mainly, but Nouns included)
+            { "Hace calor": "It's hot" },
+            { "Hace frío": "It's cold" },
+            { "Hace buen tiempo": "The weather is good" },
+            { "Hace mal tiempo": "The weather is bad" },
+            { "Hace sol": "It's sunny" },
+            { "nublado": "cloudy" },
+            { "soleado": "sunny" },
+            { "hay viento": "it's windy" },
+            { "la nieve": "snow" },
+            { "la lluvia": "rain" },
+            { "la tormenta": "storm" },
+            { "la nube": "cloud" },
+            { "el trueno": "thunder" },
+            { "el relámpago": "lightning" },
+            { "Está nevando": "It's snowing" },
+            { "Está lluvioso": "It's rainy" },
+            { "Está tormentoso": "It's stormy" },
+            
+            // Seasons
+            { "La primavera": "spring" },
+            { "el verano": "summer" },
+            { "el otoño": "autumn/fall" },
+            { "el invierno": "winter" },
+            
+            // Celestial
+            { "El sol": "sun" },
+            { "la luna": "moon" },
+            
+            // Animals
+            { "El gato": "cat" },
+            { "el perro": "dog" },
+            { "el pájaro": "bird" },
+            { "el elefante": "elephant" },
+            { "el león": "lion" },
+            { "el oso": "bear" },
+            { "el caballo": "horse" },
+            { "el tigre": "tiger" },
+            { "el toro": "bull" },
+            { "la tortuga": "turtle" },
+            { "el cerdo": "pig" },
+            { "la vaca": "cow" },
+            { "la oveja": "sheep" },
+            { "el pato": "duck" },
+            
+            // Body Parts
+            { "La cabeza": "head" },
+            { "la cara": "face" },
+            { "los ojos": "eyes" },
+            { "las orejas": "ears" },
+            { "el pecho": "chest" },
+            { "los brazos": "arms" },
+            { "las piernas": "legs" },
+            { "los pies": "feet" },
+            { "las manos": "hands" },
+            { "los dedos": "fingers" },
+            { "los dedos de pies": "toes" },
+            { "la espalda": "back" },
+            { "la rodilla": "knee" },
+            { "el codo": "elbow" },
+            { "el hombro": "shoulder" },
+            { "el tobillo": "ankle" },
+            { "los dientes": "teeth" },
+            { "el estómago": "stomach" },
+            { "la cadera": "hip" },
+            { "el pelo": "hair" },
+            { "el cabello": "hair" },
+            { "la muñeca": "wrist" },
+            
+            // Physical Descriptions
+            { "Alto": "tall (male)" },
+            { "alta": "tall (female)" },
+            { "bajo": "short (male)" },
+            { "baja": "short (female)" },
+            { "delgado": "thin/slim (male)" },
+            { "delgada": "thin/slim (female)" },
+            { "gordo": "fat (male)" },
+            { "gorda": "fat (female)" },
+            { "guapo": "handsome/good-looking (male)" },
+            { "guapa": "beautiful/good-looking (female)" },
+            { "hermoso": "beautiful/handsome (male)" },
+            { "hermosa": "beautiful (female)" },
+            { "feo": "ugly (male)" },
+            { "fea": "ugly (female)" },
+            { "fuerte": "strong" },
+            { "musculoso": "muscular (male)" },
+            { "musculosa": "muscular (female)" },
+            { "moreno": "dark-haired/dark-skinned (male)" },
+            { "morena": "dark-haired/dark-skinned (female)" },
+            { "rubio": "blonde (male)" },
+            { "rubia": "blonde (female)" },
+            { "pelirrojo": "red-haired (male)" },
+            { "pelirroja": "red-haired (female)" },
+            { "canoso": "gray-haired" },
+            { "joven": "young" },
+            { "viejo": "old (male)" },
+            { "vieja": "old (female)" },
+            { "mayor": "older" },
+            { "pálido": "pale (male)" },
+            { "pálida": "pale (female)" },
+            
+            // Personality
+            { "Amable": "kind" },
+            { "valiente": "brave" },
+            { "sensible": "sensitive" },
+            { "horrible": "horrible" },
+            { "ambicioso": "ambitious (male)" },
+            { "ambiciosa": "ambitious (female)" },
+            { "apasionado": "passionate (male)" },
+            { "apasionada": "passionate (female)" },
+            { "cuidadoso": "careful (male)" },
+            { "cuidadosa": "careful (female)" },
+            { "cínico": "cynical (male)" },
+            { "cínica": "cynical (female)" },
+            { "dependiente": "dependent" },
+            { "independiente": "independent" },
+            { "divertido": "fun (male)" },
+            { "divertida": "fun (female)" },
+            { "gracioso": "funny (male)" },
+            { "graciosa": "funny (female)" },
+            { "dulce": "sweet" },
+            { "educado": "polite (male)" },
+            { "educada": "polite (female)" },
+            { "inteligente": "intelligent" },
+            { "generoso": "generous (male)" },
+            { "generosa": "generous (female)" },
+            { "paciente": "patient" },
+            { "impaciente": "impatient" },
+            { "impulsivo": "impulsive (male)" },
+            { "impulsiva": "impulsive (female)" },
+            { "interesante": "interesting" },
+            { "malo": "bad (male)" },
+            { "mala": "bad (female)" },
+            { "mentiroso": "liar (male)" },
+            { "mentirosa": "liar (female)" },
+            { "perezoso": "lazy (male)" },
+            { "perezosa": "lazy (female)" },
+            { "poderoso": "powerful (male)" },
+            { "poderosa": "powerful (female)" },
+            { "positivo": "positive (male)" },
+            { "positiva": "positive (female)" },
+            { "reservado": "reserved (male)" },
+            { "reservada": "reserved (female)" },
+            { "serio": "serious (male)" },
+            { "seria": "serious (female)" },
+            { "simpático": "nice/pleasant (male)" },
+            { "simpática": "nice/pleasant (female)" },
+            { "talentoso": "talented (male)" },
+            { "talentosa": "talented (female)" },
+            
+            // Emotions
+            { "Feliz": "happy" },
+            { "triste": "sad" },
+            { "emocionado": "excited (male)" },
+            { "emocionada": "excited (female)" },
+            { "cansado": "tired (male)" },
+            { "cansada": "tired (female)" },
+            { "enfadado": "angry (male)" },
+            { "enfadada": "angry (female)" },
+            { "enojado": "angry (male)" },
+            { "enojada": "angry (female)" },
+            { "preocupado": "worried (male)" },
+            { "preocupada": "worried (female)" },
+            { "aburrido": "bored (male)" },
+            { "aburrida": "bored (female)" },
+            { "confundido": "confused (male)" },
+            { "confundida": "confused (female)" },
+            { "enamorado": "in love (male)" },
+            { "enamorada": "in love (female)" },
+            { "asustado": "scared (male)" },
+            { "asustada": "scared (female)" },
+            { "frustrado": "frustrated (male)" },
+            { "frustrada": "frustrated (female)" },
+            { "sorprendido": "surprised (male)" },
+            { "sorprendida": "surprised (female)" },
+            { "cómodo": "comfortable (male)" },
+            { "cómoda": "comfortable (female)" },
+            { "incómodo": "uncomfortable (male)" },
+            { "incómoda": "uncomfortable (female)" },
+            { "avergonzado": "embarrassed (male)" },
+            { "avergonzada": "embarrassed (female)" },
+            { "tímido": "shy (male)" },
+            { "tímida": "shy (female)" },
+            { "nervioso": "nervous (male)" },
+            { "nerviosa": "nervous (female)" },
+            { "ansioso": "anxious (male)" },
+            { "ansiosa": "anxious (female)" },
+            
+            // Sports
+            { "El béisbol": "baseball" },
+            { "el fútbol": "soccer/football" },
+            { "el baloncesto": "basketball" },
+            { "el básquetbol": "basketball" },
+            { "el golf": "golf" },
+            { "el hockey": "hockey" },
+            { "el tenis": "tennis" },
+            { "el voleibol": "volleyball" },
+            { "el equipo": "team" },
+            { "la carrera": "race" },
+            { "la pelota": "ball" },
+            { "la raqueta": "racket" },
+            { "la red": "net" },
+            
+            // Sports Verbs
+            { "jugar": "to play" },
+            { "practicar": "to practice" },
+            { "ganar": "to win" },
+            { "perder": "to lose" },
+            { "empatar": "to tie/draw" },
+            { "tirar": "to throw" },
+            { "patear": "to kick" },
+            { "esquiar": "to ski" },
+            
+            // Days of the Week
+            { "El lunes": "Monday" },
+            { "el martes": "Tuesday" },
+            { "el miércoles": "Wednesday" },
+            { "el jueves": "Thursday" },
+            { "el viernes": "Friday" },
+            { "el sábado": "Saturday" },
+            { "el domingo": "Sunday" },
+            
+            // Months
+            { "Enero": "January" },
+            { "febrero": "February" },
+            { "marzo": "March" },
+            { "abril": "April" },
+            { "mayo": "May" },
+            { "junio": "June" },
+            { "julio": "July" },
+            { "agosto": "August" },
+            { "septiembre": "September" },
+            { "octubre": "October" },
+            { "noviembre": "November" },
+            { "diciembre": "December" },
+            
+            // Time & Dates
+            { "El año": "year" },
+            { "el mes": "month" },
+            { "la semana": "week" },
+            { "el día": "day" },
+            { "la hora": "hour" },
+            { "ayer": "yesterday" },
+            { "hoy": "today" },
+            { "la mañana": "tomorrow/morning" },
+            { "pasado mañana": "the day after tomorrow" },
+            { "la tarde": "afternoon/evening/late" },
+            { "la noche": "night" },
+            { "el fin de semana": "weekend" },
+            
+            // Telling Time
+            { "Es la": "It's (for 1 o'clock)" },
+            { "Son las": "It's (for other hours)" },
+            { "y media": "half past" },
+            { "y cuarto": "quarter past" },
+            { "menos cuarto": "quarter to" },
+            
+            // Numbers 0-20
+            { "cero": "zero" },
+            { "uno": "one" },
+            { "dos": "two" },
+            { "tres": "three" },
+            { "cuatro": "four" },
+            { "cinco": "five" },
+            { "seis": "six" },
+            { "siete": "seven" },
+            { "ocho": "eight" },
+            { "nueve": "nine" },
+            { "diez": "ten" },
+            { "once": "eleven" },
+            { "doce": "twelve" },
+            { "trece": "thirteen" },
+            { "catorce": "fourteen" },
+            { "quince": "fifteen" },
+            { "dieciséis": "sixteen" },
+            { "diecisiete": "seventeen" },
+            { "dieciocho": "eighteen" },
+            { "diecinueve": "nineteen" },
+            { "veinte": "twenty" },
+            
+            // Tens and Hundreds
+            { "treinta": "thirty" },
+            { "cuarenta": "forty" },
+            { "cincuenta": "fifty" },
+            { "sesenta": "sixty" },
+            { "setenta": "seventy" },
+            { "ochenta": "eighty" },
+            { "noventa": "ninety" },
+            { "cien": "one hundred" },
+            { "ciento": "one hundred (before nouns)" },
+            { "doscientos": "two hundred (masculine)" },
+            { "doscientas": "two hundred (feminine)" },
+            { "quinientos": "five hundred (masculine)" },
+            { "quinientas": "five hundred (feminine)" },
+            { "mil": "thousand" },
+            
+            // Colors (as Nouns/Adjectives)
+            { "El azul": "blue" },
+            { "el rojo": "red" },
+            { "el amarillo": "yellow" },
+            { "el verde": "green" },
+            { "el marrón": "brown" },
+            { "el morado": "purple" },
+            { "el rosa": "pink" },
+            { "el negro": "black" },
+            { "el blanco": "white" },
+            { "el gris": "gray" },
+            { "el naranja": "orange" },
+            
+            // Key Verbs
+            { "Ser": "to be (permanent)" },
+            { "estar": "to be (temporary/location)" },
+            { "tener": "to have" },
+            { "haber": "to have (auxiliary)/there is/are" },
+            { "ir": "to go" },
+            { "querer": "to want/to love" },
+            { "poder": "to be able to/can" },
+            { "hacer": "to do/to make" },
+            { "decir": "to say/to tell" },
+            { "dar": "to give" },
+            { "ver": "to see" },
+            { "saber": "to know (facts)" },
+            { "conocer": "to know (people/places)" },
+            { "poner": "to put" },
+            { "salir": "to go out/to leave" },
+            { "venir": "to come" },
+            { "traer": "to bring" },
+            { "pensar": "to think" },
+            { "sentir": "to feel/to regret" },
+            { "gustar": "to like" },
+            { "encantar": "to love (things)" },
+            { "necesitar": "to need" },
+            { "comprar": "to buy" },
+            { "costar": "to cost" },
+            { "probar": "to try/to taste" },
+            { "tocar": "to touch/to play (instrument)" },
+            { "cepillarse": "to brush (oneself)" },
+            { "ducharse": "to shower (oneself)" },
+            
+            // Question Words
+            { "Qué": "what" },
+            { "quién": "who" },
+            { "cuándo": "when" },
+            { "dónde": "where" },
+            { "por qué": "why" },
+            { "cómo": "how" },
+            { "cuánto": "how much (male)" },
+            { "cuánta": "how much (female)" },
+            { "cuántos": "how many (male)" },
+            { "cuántas": "how many (female)" },
+            
+            // Possessives
+            { "Mi": "my" },
+            { "tu": "your (informal)" },
+            { "su": "his/her/your (formal)/their" },
+            { "nuestro": "our (male)" },
+            { "nuestra": "our (female)" },
+            { "vuestro": "your (plural, Spain, male)" },
+            { "vuestra": "your (plural, Spain, female)" },
+            { "mío": "mine (male)" },
+            { "mía": "mine (female)" },
+            { "tuyo": "yours (informal, male)" },
+            { "tuya": "yours (informal, female)" },
+            { "suyo": "his/hers/yours (formal)/theirs (male)" },
+            { "suya": "his/hers/yours (formal)/theirs (female)" },
+            
+            // Demonstratives
+            { "Este": "this (male)" },
+            { "esta": "this (female)" },
+            { "eso": "that (neuter)" },
+            { "esa": "that (female)" },
+            { "aquel": "that (over there, male)" },
+            { "aquella": "that (over there, female)" },
+            
+            // Pronouns
+            { "Yo": "I" },
+            { "tú": "you (informal)" },
+            { "él": "he" },
+            { "ella": "she" },
+            { "usted": "you (formal)" },
+            { "nosotros": "we (male/mixed)" },
+            { "nosotras": "we (female)" },
+            { "vosotros": "you all (Spain, male/mixed)" },
+            { "vosotras": "you all (Spain, female)" },
+            { "ellos": "they (male/mixed)" },
+            { "ellas": "they (female)" },
+            { "ustedes": "you all (formal/Latin America)" },
+            
+            // Object Pronouns
+            { "Me": "me/to me" },
+            { "te": "you/to you (informal)" },
+            { "se": "himself/herself/yourself/themselves" },
+            { "nos": "us/to us" },
+            { "os": "you all/to you all (Spain)" },
+            { "lo": "him/it (male, direct object)" },
+            { "la": "her/it (female, direct object)" },
+            { "los": "them (male/mixed, direct object)" },
+            { "las": "them (female, direct object)" },
+            { "le": "to him/to her/to you (indirect object)" },
+            { "les": "to them/to you all (indirect object)" },
+            
+            // Miscellaneous
+            { "El ejercicio": "exercise" },
+            { "el viaje": "trip" },
+            { "el clima": "climate/weather" },
+            { "la dirección": "address/direction" },
+            { "el precio": "price" },
+            { "la rebaja": "discount/sale" },
+            { "la bolsa": "bag" },
+            { "el pasillo": "aisle" },
+            { "la caja": "cash register/box" },
+            { "el carrito": "shopping cart" },
+            { "los productos lácteos": "dairy products" },
+            { "la cortesía": "courtesy" },
+            { "el sueño": "sleep/dream" }
         ];
 
         const fullWordList = rawWordList.map(obj => {
@@ -1013,7 +1066,17 @@
         const langIndicator = document.getElementById('langIndicator');
 
         // Logic
-        function startQuiz() {
+        function insertChar(char) {
+            const input = document.getElementById('answerInput');
+            const start = input.selectionStart;
+            const end = input.selectionEnd;
+            const text = input.value;
+            input.value = text.substring(0, start) + char + text.substring(end);
+            input.focus();
+            input.selectionStart = input.selectionEnd = start + 1;
+        }
+
+        function startQuiz(mode = 'regular') {
             // Build Synonym Map (English -> All valid Spanish words)
             synonymMap = {};
             fullWordList.forEach(item => {
@@ -1030,96 +1093,101 @@
 
             const learnedCount = parseInt(progressInput.value) || 0;
             
-            // 1. Identify segments
-            const startPrior = Math.max(0, learnedCount - 40);
-            const priorWords = fullWordList.slice(startPrior, learnedCount);
-            const newWords = fullWordList.slice(learnedCount, learnedCount + 20);
-
-            let randomWords = [];
-            if (startPrior > 0) {
-                const pool = fullWordList.slice(0, startPrior);
-                pool.sort(() => Math.random() - 0.5);
-                randomWords = pool.slice(0, 40);
-            }
-
-            // Store for AI Prompt (Unique Spanish words)
-            sessionNewWords = newWords.map(w => w.es);
-            sessionReviewWords = [...new Set([...priorWords, ...randomWords].map(w => w.es))];
-
-            // 2. Build Base Array (Weighted)
-            // "The 20 new words are copied twice (so there are three times as many of them)"
-            const newWordsTripled = [];
-            newWords.forEach(w => {
-                newWordsTripled.push(w, w, w);
-            });
-
-            const baseSet = [
-                ...priorWords,
-                ...newWordsTripled,
-                ...randomWords
-            ];
-
-            // 3. Replicate 10 times
-            let finalArray = [];
-            for (let i = 0; i < 10; i++) {
-                finalArray = finalArray.concat(baseSet);
-            }
-
-            if (finalArray.length === 0) {
-                alert("Please increase the number of learned words or check the word list.");
-                return;
-            }
-
-            // 4. Shuffle Final Queue
-            quizQueue = finalArray.sort(() => Math.random() - 0.5);
-
-            // 4b. Mix in Grammar (Easy -> Hard maps to End -> Start of array)
-            // We want 'Easy' (index 0) to be popped earlier (End of array).
-            // We want 'Hard' (index N) to be popped later (Start of array).
-            const segmentSize = Math.floor(quizQueue.length / (grammarBank.length || 1));
-            
-            grammarBank.forEach((gItem, index) => {
-                // Calculate target bucket: 
-                // index 0 (Easy) -> Last bucket
-                // index N (Hard) -> First bucket
-                const bucketIndex = (grammarBank.length - 1) - index;
+            if (mode === 'random') {
+                // RANDOM MODE: Shuffle all words up to learnedCount
+                let pool = fullWordList.slice(0, learnedCount);
+                if (pool.length === 0) {
+                    alert("Please enter a valid number of learned words (at least 1).");
+                    return;
+                }
                 
-                // Random position within that bucket
-                let pos = (bucketIndex * segmentSize) + Math.floor(Math.random() * segmentSize);
+                // Shuffle
+                quizQueue = pool.sort(() => Math.random() - 0.5);
                 
-                // Clamp to bounds
-                pos = Math.max(0, Math.min(pos, quizQueue.length));
+                // Mix in grammar randomly
+                grammarBank.forEach(gItem => {
+                    const pos = Math.floor(Math.random() * (quizQueue.length + 1));
+                    quizQueue.splice(pos, 0, gItem);
+                });
                 
-                quizQueue.splice(pos, 0, gItem);
-            });
+                // Set session words for AI prompt (just take a sample of random words)
+                sessionNewWords = [];
+                sessionReviewWords = quizQueue
+                    .filter(w => w.type !== 'grammar')
+                    .slice(0, 50)
+                    .map(w => w.es);
 
-            // 5. Add Intro Phase (New Words x 2)
-            // "The quiz should begin by going over the new words twice"
-            // We create a separate list of just the new words repeated twice, then push them to the END of the array
-            // (since we .pop() from the end to get the next card).
-            const introWords = [];
-            // Add first pass (in order)
-            introWords.push(...newWords);
-            // Add second pass (in order)
-            introWords.push(...newWords);
-            
-            // Since we pop() from the end, to show them first, we must put them at the END of the array.
-            // But we want them to appear in order 1..20, then 1..20.
-            // If we push [1,2,3], popping gives 3,2,1.
-            // So we need to reverse them before pushing if we want them in order.
-            introWords.reverse();
+            } else {
+                // REGULAR MODE: Spaced Repetition Logic
+                
+                // 1. Identify segments
+                const startPrior = Math.max(0, learnedCount - 40);
+                const priorWords = fullWordList.slice(startPrior, learnedCount);
+                const newWords = fullWordList.slice(learnedCount, learnedCount + 20);
 
-            // Append intro words to the queue (which is the stack we pop from)
-            quizQueue.push(...introWords);
+                let randomWords = [];
+                if (startPrior > 0) {
+                    const pool = fullWordList.slice(0, startPrior);
+                    pool.sort(() => Math.random() - 0.5);
+                    randomWords = pool.slice(0, 40);
+                }
+
+                // Store for AI Prompt (Unique Spanish words)
+                sessionNewWords = newWords.map(w => w.es);
+                sessionReviewWords = [...new Set([...priorWords, ...randomWords].map(w => w.es))];
+
+                // 2. Build Base Array (Weighted)
+                // "The 20 new words are copied twice (so there are three times as many of them)"
+                const newWordsTripled = [];
+                newWords.forEach(w => {
+                    newWordsTripled.push(w, w, w);
+                });
+
+                const baseSet = [
+                    ...priorWords,
+                    ...newWordsTripled,
+                    ...randomWords
+                ];
+
+                // 3. Replicate 10 times
+                let finalArray = [];
+                for (let i = 0; i < 10; i++) {
+                    finalArray = finalArray.concat(baseSet);
+                }
+
+                if (finalArray.length === 0) {
+                    alert("Please increase the number of learned words or check the word list.");
+                    return;
+                }
+
+                // 4. Shuffle Final Queue
+                quizQueue = finalArray.sort(() => Math.random() - 0.5);
+
+                // 4b. Mix in Grammar (Easy -> Hard maps to End -> Start of array)
+                const segmentSize = Math.floor(quizQueue.length / (grammarBank.length || 1));
+                
+                grammarBank.forEach((gItem, index) => {
+                    const bucketIndex = (grammarBank.length - 1) - index;
+                    let pos = (bucketIndex * segmentSize) + Math.floor(Math.random() * segmentSize);
+                    pos = Math.max(0, Math.min(pos, quizQueue.length));
+                    quizQueue.splice(pos, 0, gItem);
+                });
+
+                // 5. Add Intro Phase (New Words x 2)
+                const introWords = [];
+                introWords.push(...newWords);
+                introWords.push(...newWords);
+                introWords.reverse(); // Because we pop()
+
+                quizQueue.push(...introWords);
+            }
 
             totalItems = quizQueue.length;
             itemsDone = 0;
 
-            // Reset stats for new words
-            newWords.forEach(w => {
-                if (!correctCounts[w.es]) correctCounts[w.es] = 0;
-            });
-
+            // Reset stats (optional, but good for session tracking)
+            // Note: We don't clear global correctCounts, just local session tracking if any.
+            
             setupScreen.classList.add('hidden');
             quizScreen.classList.remove('hidden');
             
