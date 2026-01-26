@@ -224,9 +224,39 @@
             gap: 10px;
             flex-direction: column;
         }
+
+        .flush-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: #ff5252;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+
+        .flush-btn:hover {
+            transform: scale(1.1);
+            background-color: #d32f2f;
+        }
+
+        .flush-btn:active {
+            transform: scale(0.9);
+        }
     </style>
 </head>
 <body>
+    <button class="flush-btn" onclick="flushState()" title="Flush Game State">🗑️</button>
 
     <!-- Setup Screen -->
     <div id="setupScreen" class="container setup-screen">
@@ -1302,6 +1332,7 @@
 
         // State
         let quizQueue = [];
+        let reinforcedWords = new Set();
         let historyStack = []; // Stores past cards to go back
         let currentCard = null;
         let correctCounts = {};
@@ -1339,6 +1370,7 @@
         function startQuiz(mode = 'regular') {
             // Reset history
             historyStack = [];
+            reinforcedWords = new Set();
             if (backBtn) backBtn.disabled = true;
 
             // Build Synonym Map (English -> All valid Spanish words)
@@ -1549,6 +1581,7 @@
             if (!currentCard || !currentCard.wordObj) return;
 
             const wordObj = currentCard.wordObj;
+            reinforcedWords.add(wordObj);
             
             // Count existing instances of this question in the remaining queue
             const existingCount = quizQueue.filter(item => item === wordObj).length;
@@ -1773,7 +1806,9 @@
                 // Show override button
                 document.getElementById('overrideBtn').classList.remove('hidden');
                 // Show reinforce button
-                document.getElementById('reinforceBtn').classList.remove('hidden');
+                if (!reinforcedWords.has(currentCard.wordObj)) {
+                    document.getElementById('reinforceBtn').classList.remove('hidden');
+                }
 
                 // Auto-advance delay logic
                 // If the user does nothing, we move on.
