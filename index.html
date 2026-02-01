@@ -294,6 +294,7 @@
         
         <button class="btn" onclick="checkAnswer()">Submit</button>
         <button id="overrideBtn" class="btn hidden" style="background-color: #fbc02d; color: black; margin-top: 0.5rem;" onclick="overrideCorrect()">⚠️ I was right (Override)</button>
+        <button id="reinforceBtn" class="btn hidden" style="background-color: #ff5722; color: white; margin-top: 0.5rem;" onclick="applyReinforcement(true)">💪 Reinforce (Show More Often)</button>
 
         <div class="feedback-stats" id="statsDisplay"></div>
 
@@ -1576,7 +1577,7 @@
             updateProgress();
         }
 
-        function applyReinforcement() {
+        function applyReinforcement(isManual = false) {
             if (!currentCard || !currentCard.wordObj) return;
 
             const wordObj = currentCard.wordObj;
@@ -1593,6 +1594,14 @@
 
             totalItems += copiesToAdd; 
             updateProgress();
+
+            if (isManual) {
+                const btn = document.getElementById('reinforceBtn');
+                if (btn) {
+                    btn.textContent = `✅ Reinforced! (Added ${copiesToAdd}x)`;
+                    btn.disabled = true;
+                }
+            }
         }
 
         let autoAdvanceTimer = null;
@@ -1600,6 +1609,12 @@
         function loadCard(wordObj) {
             isProcessing = false;
             document.getElementById('overrideBtn').classList.add('hidden');
+            const rBtn = document.getElementById('reinforceBtn');
+            if (rBtn) {
+                rBtn.classList.add('hidden');
+                rBtn.textContent = "💪 Reinforce (Show More Often)";
+                rBtn.disabled = false;
+            }
             
             if (wordObj.type === 'grammar') {
                 currentCard = {
@@ -1652,6 +1667,8 @@
             if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
             
             document.getElementById('overrideBtn').classList.add('hidden');
+            const rBtn = document.getElementById('reinforceBtn');
+            if (rBtn) rBtn.classList.add('hidden');
             
             // 1. Save current card to history before moving on
             if (currentCard) {
@@ -1726,6 +1743,8 @@
             answerInput.classList.add('input-correct');
             statsDisplay.style.color = "var(--success)";
             document.getElementById('overrideBtn').classList.add('hidden');
+            const rBtn = document.getElementById('reinforceBtn');
+            if (rBtn) rBtn.classList.add('hidden');
             
             isProcessing = true;
             autoAdvanceTimer = setTimeout(() => {
@@ -1772,10 +1791,13 @@
                 } else {
                     statsDisplay.textContent = "Correct!";
                 }
+                
+                // Allow optional reinforcement even if correct (or even if removed!)
+                document.getElementById('reinforceBtn').classList.remove('hidden');
 
                 autoAdvanceTimer = setTimeout(() => {
                     nextCard();
-                }, 1000);
+                }, 2000); // Increased slightly so they have time to click button
 
             } else {
                 // Incorrect - Show error AND override button
@@ -1792,7 +1814,7 @@
                 document.getElementById('overrideBtn').classList.remove('hidden');
                 
                 // Automatic reinforcement
-                applyReinforcement();
+                applyReinforcement(false);
 
                 // Auto-advance delay logic
                 // If the user does nothing, we move on.
