@@ -294,7 +294,6 @@
         
         <button class="btn" onclick="checkAnswer()">Submit</button>
         <button id="overrideBtn" class="btn hidden" style="background-color: #fbc02d; color: black; margin-top: 0.5rem;" onclick="overrideCorrect()">⚠️ I was right (Override)</button>
-        <button id="reinforceBtn" class="btn hidden" style="background-color: #ff5722; color: white; margin-top: 0.5rem;" onclick="reinforceWord()">💪 Reinforce (Show More Often)</button>
 
         <div class="feedback-stats" id="statsDisplay"></div>
 
@@ -1577,24 +1576,14 @@
             updateProgress();
         }
 
-        function reinforceWord() {
+        function applyReinforcement() {
             if (!currentCard || !currentCard.wordObj) return;
 
             const wordObj = currentCard.wordObj;
             reinforcedWords.add(wordObj);
             
-            // Count existing instances of this question in the remaining queue
-            const existingCount = quizQueue.filter(item => item === wordObj).length;
-            
-            // Logic: Make it 3 times more frequent (Triple the count).
-            // If none exist, add at least one.
-            let copiesToAdd;
-            if (existingCount === 0) {
-                copiesToAdd = 1;
-            } else {
-                // To triple the count (Total = 3 * Existing), we add 2 * Existing
-                copiesToAdd = existingCount * 2;
-            }
+            // Add 18 copies as requested
+            const copiesToAdd = 18;
 
             for (let i = 0; i < copiesToAdd; i++) {
                 // Random position in the queue
@@ -1602,17 +1591,8 @@
                 quizQueue.splice(pos, 0, wordObj);
             }
 
-            totalItems += copiesToAdd; // Update total to reflect new length
+            totalItems += copiesToAdd; 
             updateProgress();
-
-            // Feedback
-            const btn = document.getElementById('reinforceBtn');
-            btn.textContent = `✅ Reinforced! (Added ${copiesToAdd}x)`;
-            btn.disabled = true;
-            
-            // Cancel the auto-advance timeout if user interacts
-            // (Note: We can't easily cancel the anonymous setTimeout from checkAnswer without storing the ID. 
-            // We will just let it happen, or better, we should store the timer ID.)
         }
 
         let autoAdvanceTimer = null;
@@ -1620,11 +1600,6 @@
         function loadCard(wordObj) {
             isProcessing = false;
             document.getElementById('overrideBtn').classList.add('hidden');
-            document.getElementById('reinforceBtn').classList.add('hidden');
-            // Reset reinforce button state
-            const rBtn = document.getElementById('reinforceBtn');
-            rBtn.textContent = "💪 Reinforce (Show More Often)";
-            rBtn.disabled = false;
             
             if (wordObj.type === 'grammar') {
                 currentCard = {
@@ -1677,7 +1652,6 @@
             if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
             
             document.getElementById('overrideBtn').classList.add('hidden');
-            document.getElementById('reinforceBtn').classList.add('hidden');
             
             // 1. Save current card to history before moving on
             if (currentCard) {
@@ -1752,7 +1726,6 @@
             answerInput.classList.add('input-correct');
             statsDisplay.style.color = "var(--success)";
             document.getElementById('overrideBtn').classList.add('hidden');
-            document.getElementById('reinforceBtn').classList.add('hidden');
             
             isProcessing = true;
             autoAdvanceTimer = setTimeout(() => {
@@ -1780,10 +1753,22 @@
                 // Correct
                 answerInput.classList.add('input-correct');
                 
-                if (currentCard.wordObj.es && correctCounts.hasOwnProperty(currentCard.wordObj.es)) {
+                if (currentCard.wordObj.es) {
+                    if (!correctCounts[currentCard.wordObj.es]) correctCounts[currentCard.wordObj.es] = 0;
                     correctCounts[currentCard.wordObj.es]++;
                     saveProgress();
-                    statsDisplay.textContent = `Correct! You've mastered "${currentCard.wordObj.es}" ${correctCounts[currentCard.wordObj.es]} times.`;
+
+                    // Check for 3 correct guesses removal
+                    if (correctCounts[currentCard.wordObj.es] >= 3) {
+                         const initialLength = quizQueue.length;
+                         quizQueue = quizQueue.filter(item => item !== currentCard.wordObj);
+                         const removedCount = initialLength - quizQueue.length;
+                         totalItems -= removedCount;
+                         updateProgress();
+                         statsDisplay.textContent = `Correct! Mastered (${correctCounts[currentCard.wordObj.es]} times). Removed from future cards.`;
+                    } else {
+                        statsDisplay.textContent = `Correct! You've mastered "${currentCard.wordObj.es}" ${correctCounts[currentCard.wordObj.es]} times.`;
+                    }
                 } else {
                     statsDisplay.textContent = "Correct!";
                 }
@@ -1805,16 +1790,12 @@
                 
                 // Show override button
                 document.getElementById('overrideBtn').classList.remove('hidden');
-                // Show reinforce button
-                if (!reinforcedWords.has(currentCard.wordObj)) {
-                    document.getElementById('reinforceBtn').classList.remove('hidden');
-                }
+                
+                // Automatic reinforcement
+                applyReinforcement();
 
                 // Auto-advance delay logic
                 // If the user does nothing, we move on.
-                // If they click Reinforce, we want to give them feedback and NOT necessarily extend the time massively, 
-                // OR we just rely on them moving on?
-                // The previous logic was 5 seconds.
                 
                 isProcessing = true;
                 autoAdvanceTimer = setTimeout(() => {
