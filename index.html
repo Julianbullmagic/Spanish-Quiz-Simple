@@ -1331,6 +1331,7 @@
         ];
 
         // State
+        let currentQuizMode = 'regular';
         let quizQueue = [];
         let reinforcedWords = new Set();
         let historyStack = []; // Stores past cards to go back
@@ -1368,6 +1369,7 @@
         }
 
         function startQuiz(mode = 'regular') {
+            currentQuizMode = mode;
             // Reset history
             historyStack = [];
             reinforcedWords = new Set();
@@ -1584,7 +1586,10 @@
             reinforcedWords.add(wordObj);
             
             // Add 18 copies as requested
-            const copiesToAdd = 18;
+            let copiesToAdd = 18;
+            if (currentQuizMode === 'random' && !isManual) {
+                copiesToAdd = 18 * 3;
+            }
 
             for (let i = 0; i < copiesToAdd; i++) {
                 // Random position in the queue
