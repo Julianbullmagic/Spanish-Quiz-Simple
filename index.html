@@ -308,6 +308,7 @@
         <button class="btn" onclick="checkAnswer()">Submit</button>
         <button id="overrideBtn" class="btn hidden" style="background-color: #fbc02d; color: black; margin-top: 0.5rem;" onclick="overrideCorrect()">⚠️ I was right (Override)</button>
         <button id="reinforceBtn" class="btn hidden" style="background-color: #ff5722; color: white; margin-top: 0.5rem;" onclick="applyReinforcement(true)">💪 Reinforce (Show More Often)</button>
+        <button id="removeWordBtn" class="btn hidden" style="background-color: #9e9e9e; color: white; margin-top: 0.5rem;" onclick="removeCurrentWord()">🗑️ Remove Word (Skip All)</button>
 
         <div class="feedback-stats" id="statsDisplay"></div>
 
@@ -1354,7 +1355,13 @@
         let itemsDone = 0;
         let isProcessing = false;
         let synonymMap = {}; // Stores English -> [Spanish1, Spanish2...]
-        
+
+        // Unique key for a word object (works across serialization)
+        function wordKey(obj) {
+            if (!obj) return null;
+            return obj.es || obj.id || JSON.stringify(obj);
+        }
+
         // Session Data for Export
         let sessionNewWords = [];
         let sessionReviewWords = [];
@@ -1504,6 +1511,7 @@
             
             saveProgress();
             nextCard();
+            saveQuizState();
         }
 
         function parseAnswers(text) {
@@ -1588,8 +1596,9 @@
             // Actually, simplest is: itemsDone tracks how many we COMPLETED. 
             // If we go back to view A, we haven't "completed" A again yet. 
             // So itemsDone should probably decrement.
-            itemsDone--; 
+            itemsDone--;
             updateProgress();
+            saveQuizState();
         }
 
         function applyReinforcement(isManual = false) {
@@ -1610,6 +1619,7 @@
             totalItems += copiesToAdd;
             updateProgress();
             updateRepeatBadge();
+            saveQuizState();
 
             if (isManual) {
                 const btn = document.getElementById('reinforceBtn');
@@ -1622,6 +1632,30 @@
 
         let autoAdvanceTimer = null;
 
+        function removeCurrentWord() {
+            if (!currentCard || !currentCard.wordObj) return;
+
+            const key = wordKey(currentCard.wordObj);
+            const initialLength = quizQueue.length;
+            quizQueue = quizQueue.filter(item => wordKey(item) !== key);
+            const removedCount = initialLength - quizQueue.length;
+            totalItems -= removedCount;
+            updateProgress();
+            updateRepeatBadge();
+            saveQuizState();
+
+            const btn = document.getElementById('removeWordBtn');
+            if (btn) {
+                btn.textContent = `✅ Removed ${removedCount} copies!`;
+                btn.disabled = true;
+            }
+
+            isProcessing = true;
+            autoAdvanceTimer = setTimeout(() => {
+                nextCard();
+            }, 1500);
+        }
+
         function loadCard(wordObj) {
             isProcessing = false;
             document.getElementById('overrideBtn').classList.add('hidden');
@@ -1630,6 +1664,12 @@
                 rBtn.classList.add('hidden');
                 rBtn.textContent = "💪 Reinforce (Show More Often)";
                 rBtn.disabled = false;
+            }
+            const rmBtn = document.getElementById('removeWordBtn');
+            if (rmBtn) {
+                rmBtn.classList.add('hidden');
+                rmBtn.textContent = "🗑️ Remove Word (Skip All)";
+                rmBtn.disabled = false;
             }
             
             if (wordObj.type === 'grammar') {
@@ -1685,7 +1725,8 @@
                 if (badge) badge.classList.add('hidden');
                 return;
             }
-            const count = quizQueue.filter(item => item === currentCard.wordObj).length;
+            const key = wordKey(currentCard.wordObj);
+            const count = quizQueue.filter(item => wordKey(item) === key).length;
             if (count > 1) {
                 badge.textContent = `🔁 ${count} times remaining in queue`;
                 badge.classList.remove('hidden');
@@ -1701,6 +1742,8 @@
             document.getElementById('overrideBtn').classList.add('hidden');
             const rBtn = document.getElementById('reinforceBtn');
             if (rBtn) rBtn.classList.add('hidden');
+            const rmBtn = document.getElementById('removeWordBtn');
+            if (rmBtn) rmBtn.classList.add('hidden');
             
             // 1. Save current card to history before moving on
             if (currentCard) {
@@ -1725,6 +1768,7 @@
             updateProgress();
             
             loadCard(wordObj);
+            saveQuizState();
         }
 
         function cleanAnswer(text) {
@@ -1777,8 +1821,11 @@
             document.getElementById('overrideBtn').classList.add('hidden');
             const rBtn = document.getElementById('reinforceBtn');
             if (rBtn) rBtn.classList.add('hidden');
+            const rmBtn = document.getElementById('removeWordBtn');
+            if (rmBtn) rmBtn.classList.add('hidden');
             
             isProcessing = true;
+            saveQuizState();
             autoAdvanceTimer = setTimeout(() => {
                 nextCard();
             }, 1000);
@@ -1812,7 +1859,8 @@
                     // Check for 3 correct guesses removal
                     if (correctCounts[currentCard.wordObj.es] >= 3) {
                          const initialLength = quizQueue.length;
-                         quizQueue = quizQueue.filter(item => item !== currentCard.wordObj);
+                         const key = wordKey(currentCard.wordObj);
+                         quizQueue = quizQueue.filter(item => wordKey(item) !== key);
                          const removedCount = initialLength - quizQueue.length;
                          totalItems -= removedCount;
                          updateProgress();
@@ -1826,7 +1874,9 @@
                 
                 // Allow optional reinforcement even if correct (or even if removed!)
                 document.getElementById('reinforceBtn').classList.remove('hidden');
+                document.getElementById('removeWordBtn').classList.remove('hidden');
 
+                saveQuizState();
                 autoAdvanceTimer = setTimeout(() => {
                     nextCard();
                 }, 2000); // Increased slightly so they have time to click button
@@ -1910,10 +1960,102 @@ ${sessionReviewWords.join(', ')}`;
             localStorage.setItem('spanishApp_learnedCount', progressInput.value);
         }
 
+        function saveQuizState() {
+            if (quizScreen.classList.contains('hidden')) return;
+            try {
+                const state = {
+                    currentQuizMode,
+                    quizQueue,
+                    historyStack,
+                    currentCard,
+                    correctCounts,
+                    totalItems,
+                    itemsDone,
+                    sessionNewWords,
+                    sessionReviewWords
+                };
+                localStorage.setItem('spanishApp_quizState', JSON.stringify(state));
+            } catch (e) {
+                console.warn('Failed to save quiz state:', e);
+            }
+        }
+
+        function loadQuizState() {
+            const saved = localStorage.getItem('spanishApp_quizState');
+            if (!saved) return false;
+
+            try {
+                const state = JSON.parse(saved);
+
+                currentQuizMode = state.currentQuizMode || 'regular';
+                quizQueue = state.quizQueue || [];
+                historyStack = state.historyStack || [];
+                currentCard = state.currentCard || null;
+                correctCounts = state.correctCounts || {};
+                totalItems = state.totalItems || 0;
+                itemsDone = state.itemsDone || 0;
+                sessionNewWords = state.sessionNewWords || [];
+                sessionReviewWords = state.sessionReviewWords || [];
+
+                // Rebuild synonymMap for future cards
+                synonymMap = {};
+                fullWordList.forEach(item => {
+                    const enVariations = parseAnswers(item.en);
+                    enVariations.forEach(en => {
+                        const k = en.toLowerCase().trim();
+                        if (!synonymMap[k]) synonymMap[k] = [];
+                        if (!synonymMap[k].includes(item.es)) {
+                            synonymMap[k].push(item.es);
+                        }
+                    });
+                });
+
+                // Show quiz screen
+                setupScreen.classList.add('hidden');
+                quizScreen.classList.remove('hidden');
+
+                // Restore current card display
+                if (currentCard) {
+                    questionWordEl.textContent = currentCard.question;
+                    if (currentCard.mode === 'grammar') {
+                        langIndicator.textContent = `Grammar: ${currentCard.wordObj.topic}`;
+                    } else {
+                        langIndicator.textContent = currentCard.mode === 'toEN' ? "Spanish → English" : "English → Spanish";
+                    }
+                    answerInput.value = "";
+                    answerInput.className = "";
+                    answerInput.focus();
+                    statsDisplay.textContent = "";
+                    updateRepeatBadge();
+                    updateProgress();
+                    if (backBtn) backBtn.disabled = historyStack.length === 0;
+                }
+
+                // Also restore the learned count input
+                const savedLearned = localStorage.getItem('spanishApp_learnedCount');
+                if (savedLearned) {
+                    progressInput.value = savedLearned;
+                }
+
+                return true;
+            } catch (e) {
+                console.error('Error loading quiz state:', e);
+                return false;
+            }
+        }
+
+        function flushState() {
+            if (confirm("Flush all quiz state? This will return you to the setup screen.")) {
+                localStorage.removeItem('spanishApp_quizState');
+                location.reload();
+            }
+        }
+
         function resetProgress() {
             if (confirm("Are you sure you want to reset all progress? This cannot be undone.")) {
                 localStorage.removeItem('spanishApp_correctCounts');
                 localStorage.removeItem('spanishApp_learnedCount');
+                localStorage.removeItem('spanishApp_quizState');
                 correctCounts = {};
                 progressInput.value = "";
                 location.reload();
@@ -1921,13 +2063,20 @@ ${sessionReviewWords.join(', ')}`;
         }
 
         // Initialize
-        loadProgress();
+        if (!loadQuizState()) {
+            loadProgress();
+        }
 
         // Event Listeners
         answerInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 checkAnswer();
             }
+        });
+
+        window.addEventListener('beforeunload', () => {
+            saveQuizState();
+            saveProgress();
         });
 
     </script>
