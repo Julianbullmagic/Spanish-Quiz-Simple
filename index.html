@@ -131,6 +131,18 @@
             color: #333;
         }
 
+        .repeat-badge {
+            display: inline-block;
+            background-color: #ff5722;
+            color: white;
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            animation: fadeIn 0.3s ease;
+        }
+
         .feedback-stats {
             margin-top: 1rem;
             font-size: 0.9rem;
@@ -276,6 +288,7 @@
     <div id="quizScreen" class="container quiz-screen hidden">
         <div class="lang-indicator" id="langIndicator"></div>
         <div class="word-display" id="questionWord">Hola</div>
+        <div id="repeatBadge" class="repeat-badge hidden"></div>
         
         <div class="input-group">
             <input type="text" id="answerInput" placeholder="Type translation..." autocomplete="off">
@@ -1585,11 +1598,8 @@
             const wordObj = currentCard.wordObj;
             reinforcedWords.add(wordObj);
             
-            // Add 18 copies as requested
-            let copiesToAdd = 18;
-            if (currentQuizMode === 'random' && !isManual) {
-                copiesToAdd = 18 * 3;
-            }
+            // Add 64 copies spread randomly throughout the queue
+            const copiesToAdd = 64;
 
             for (let i = 0; i < copiesToAdd; i++) {
                 // Random position in the queue
@@ -1597,8 +1607,9 @@
                 quizQueue.splice(pos, 0, wordObj);
             }
 
-            totalItems += copiesToAdd; 
+            totalItems += copiesToAdd;
             updateProgress();
+            updateRepeatBadge();
 
             if (isManual) {
                 const btn = document.getElementById('reinforceBtn');
@@ -1665,6 +1676,22 @@
             answerInput.className = "";
             answerInput.focus();
             statsDisplay.textContent = "";
+            updateRepeatBadge();
+        }
+
+        function updateRepeatBadge() {
+            const badge = document.getElementById('repeatBadge');
+            if (!badge || !currentCard || !currentCard.wordObj) {
+                if (badge) badge.classList.add('hidden');
+                return;
+            }
+            const count = quizQueue.filter(item => item === currentCard.wordObj).length;
+            if (count > 1) {
+                badge.textContent = `🔁 ${count} times remaining in queue`;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
         }
 
         function nextCard() {
