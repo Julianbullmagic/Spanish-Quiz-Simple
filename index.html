@@ -1355,6 +1355,7 @@
         let itemsDone = 0;
         let isProcessing = false;
         let synonymMap = {}; // Stores English -> [Spanish1, Spanish2...]
+        let skipSaveOnUnload = false; // Prevents beforeunload from re-saving when flushing
 
         // Unique key for a word object (works across serialization)
         function wordKey(obj) {
@@ -1840,7 +1841,11 @@
             
             // Check if any acceptable answer matches
             // We compare the "cleaned" user input against the "cleaned" acceptable answer
-            const isCorrect = currentCard.acceptable.some(a => {
+            // acceptable may be a Set (from parseAnswers) or Array (from deserialization)
+            const acceptableArr = currentCard.acceptable instanceof Array
+                ? currentCard.acceptable
+                : Array.from(currentCard.acceptable);
+            const isCorrect = acceptableArr.some(a => {
                 return cleanAnswer(a) === userClean;
             });
             
@@ -1996,6 +2001,13 @@ ${sessionReviewWords.join(', ')}`;
             try {
                 const state = JSON.parse(saved);
 
+                // Discard old state format (before acceptable/reinforcedKeys fix)
+                if (!state.reinforcedKeys) {
+                    console.warn('Old quiz state format detected, discarding.');
+                    localStorage.removeItem('spanishApp_quizState');
+                    return false;
+                }
+
                 currentQuizMode = state.currentQuizMode || 'regular';
                 quizQueue = state.quizQueue || [];
                 historyStack = state.historyStack || [];
@@ -2006,16 +2018,22 @@ ${sessionReviewWords.join(', ')}`;
                 sessionNewWords = state.sessionNewWords || [];
                 sessionReviewWords = state.sessionReviewWords || [];
 
-                // Restore acceptable arrays back to Sets (JSON turns Sets into plain objects/arrays)
-                if (currentCard && currentCard.acceptable) {
-                    currentCard.acceptable = new Set(currentCard.acceptable);
-                }
-                historyStack = historyStack.map(card => {
-                    if (card && card.acceptable) {
-                        card.acceptable = new Set(card.acceptable);
+                // Ensure acceptable is always a valid Array
+                function fixAcceptable(card) {
+                    if (!card || !card.wordObj) return card;
+                    if (!Array.isArray(card.acceptable) || card.acceptable.length === 0) {
+                        // Rebuild from wordObj
+                        if (card.mode === 'grammar') {
+                            card.acceptable = card.wordObj.acceptable || [];
+                        } else {
+                            const rawAnswer = card.mode === 'toEN' ? card.wordObj.en : card.wordObj.es;
+                            card.acceptable = parseAnswers(rawAnswer);
+                        }
                     }
                     return card;
-                });
+                }
+                currentCard = fixAcceptable(currentCard);
+                historyStack = historyStack.map(fixAcceptable);
 
                 // Rebuild reinforcedWords from saved keys
                 reinforcedWords = new Set();
@@ -2076,6 +2094,7 @@ ${sessionReviewWords.join(', ')}`;
 
         function flushState() {
             if (confirm("Flush all quiz state? This will return you to the setup screen.")) {
+                skipSaveOnUnload = true;
                 localStorage.removeItem('spanishApp_quizState');
                 location.reload();
             }
@@ -2083,6 +2102,7 @@ ${sessionReviewWords.join(', ')}`;
 
         function resetProgress() {
             if (confirm("Are you sure you want to reset all progress? This cannot be undone.")) {
+                skipSaveOnUnload = true;
                 localStorage.removeItem('spanishApp_correctCounts');
                 localStorage.removeItem('spanishApp_learnedCount');
                 localStorage.removeItem('spanishApp_quizState');
@@ -2105,8 +2125,10 @@ ${sessionReviewWords.join(', ')}`;
         });
 
         window.addEventListener('beforeunload', () => {
-            saveQuizState();
-            saveProgress();
+            if (!skipSaveOnUnload) {
+                saveQuizState();
+                saveProgress();
+            }
         });
 
     </script>
