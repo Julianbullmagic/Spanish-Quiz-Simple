@@ -1667,7 +1667,7 @@
             }
             const rmBtn = document.getElementById('removeWordBtn');
             if (rmBtn) {
-                rmBtn.classList.add('hidden');
+                rmBtn.classList.remove('hidden');
                 rmBtn.textContent = "🗑️ Remove Word (Skip All)";
                 rmBtn.disabled = false;
             }
@@ -1871,7 +1871,6 @@
                 
                 // Allow optional reinforcement even if correct (or even if removed!)
                 document.getElementById('reinforceBtn').classList.remove('hidden');
-                document.getElementById('removeWordBtn').classList.remove('hidden');
 
                 saveQuizState();
                 autoAdvanceTimer = setTimeout(() => {
