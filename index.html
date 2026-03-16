@@ -1962,16 +1962,26 @@ ${sessionReviewWords.join(', ')}`;
         function saveQuizState() {
             if (quizScreen.classList.contains('hidden')) return;
             try {
+                // Convert currentCard.acceptable from Set to Array for JSON serialization
+                const serializableCurrentCard = currentCard ? {
+                    ...currentCard,
+                    acceptable: Array.from(currentCard.acceptable || [])
+                } : null;
+
+                // Convert reinforcedWords Set to array of keys
+                const reinforcedKeys = Array.from(reinforcedWords).map(w => wordKey(w));
+
                 const state = {
                     currentQuizMode,
                     quizQueue,
                     historyStack,
-                    currentCard,
+                    currentCard: serializableCurrentCard,
                     correctCounts,
                     totalItems,
                     itemsDone,
                     sessionNewWords,
-                    sessionReviewWords
+                    sessionReviewWords,
+                    reinforcedKeys
                 };
                 localStorage.setItem('spanishApp_quizState', JSON.stringify(state));
             } catch (e) {
@@ -1995,6 +2005,27 @@ ${sessionReviewWords.join(', ')}`;
                 itemsDone = state.itemsDone || 0;
                 sessionNewWords = state.sessionNewWords || [];
                 sessionReviewWords = state.sessionReviewWords || [];
+
+                // Restore acceptable arrays back to Sets (JSON turns Sets into plain objects/arrays)
+                if (currentCard && currentCard.acceptable) {
+                    currentCard.acceptable = new Set(currentCard.acceptable);
+                }
+                historyStack = historyStack.map(card => {
+                    if (card && card.acceptable) {
+                        card.acceptable = new Set(card.acceptable);
+                    }
+                    return card;
+                });
+
+                // Rebuild reinforcedWords from saved keys
+                reinforcedWords = new Set();
+                if (state.reinforcedKeys && Array.isArray(state.reinforcedKeys)) {
+                    state.reinforcedKeys.forEach(key => {
+                        // Find a matching wordObj in the queue and add it to the set
+                        const match = quizQueue.find(item => wordKey(item) === key);
+                        if (match) reinforcedWords.add(match);
+                    });
+                }
 
                 // Rebuild synonymMap for future cards
                 synonymMap = {};
