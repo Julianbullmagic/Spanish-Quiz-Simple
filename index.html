@@ -1607,8 +1607,8 @@
             const wordObj = currentCard.wordObj;
             reinforcedWords.add(wordObj);
             
-            // Add 64 copies spread randomly throughout the queue
-            const copiesToAdd = 64;
+            // Add 128 copies spread randomly throughout the queue
+            const copiesToAdd = 128;
 
             for (let i = 0; i < copiesToAdd; i++) {
                 // Random position in the queue
@@ -1726,13 +1726,10 @@
                 return;
             }
             const key = wordKey(currentCard.wordObj);
-            const count = quizQueue.filter(item => wordKey(item) === key).length;
-            if (count > 1) {
-                badge.textContent = `🔁 ${count} times remaining in queue`;
-                badge.classList.remove('hidden');
-            } else {
-                badge.classList.add('hidden');
-            }
+            const remaining = quizQueue.filter(item => wordKey(item) === key).length;
+            const total = remaining + 1; // +1 for the current card being shown
+            badge.textContent = `🔁 ${total} total (${remaining} remaining)`;
+            badge.classList.remove('hidden');
         }
 
         function nextCard() {
