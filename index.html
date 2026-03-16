@@ -1605,6 +1605,9 @@
             if (!currentCard || !currentCard.wordObj) return;
 
             const wordObj = currentCard.wordObj;
+
+            // Only auto-reinforce once per word (first mistake). Manual always works.
+            if (!isManual && reinforcedWords.has(wordObj)) return;
             reinforcedWords.add(wordObj);
             
             // Add 128 copies spread randomly throughout the queue
